@@ -16,6 +16,7 @@
   "devDependencies": {
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^4.6.0",
+    "supabase": "^2.26.9",
     "typescript": "~5.7.2",
     "vite": "^6.3.5"
   },
