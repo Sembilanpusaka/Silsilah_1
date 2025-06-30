@@ -1,6 +1,6 @@
-// src/LoginModal.tsx
+// components/LoginModal.tsx
 import React, { useState } from 'react';
-import { supabase } from './supabaseClient'; // Path diperbaiki: dari 'src/LoginModal.tsx' ke 'src/supabaseClient.ts' adalah './supabaseClient'
+import { supabase } from '../src/supabaseClient'; // Path diperbaiki
 
 interface LoginModalProps {
     isOpen: boolean;
