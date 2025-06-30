@@ -1,26 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Silsilah Bani Qomaruddin</title>
-    
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    
-    <script type="importmap">
-    {
-      "imports": {
-        "react": "https://esm.sh/react@^19.1.0",
-        "react/": "https://esm.sh/react@^19.1.0/",
-        "react-router-dom": "https://esm.sh/react-router-dom@^7.6.3",
-        "react-dom/": "https://esm.sh/react-dom@^19.1.0/"
-      }
-    }
-    </script>
-  </head>
-  <body class="bg-base-100 text-gray-300">
-    <div id="root"></div>
-    <script type="module" src="./index.tsx"></script> 
-  </body>
-</html>
+// Silsilah_1/postcss.config.js
+export default {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+}
