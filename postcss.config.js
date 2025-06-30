@@ -1,11 +1,11 @@
 // Silsilah_1/postcss.config.js
-// Ini adalah file konfigurasi PostCSS yang digunakan oleh Vite untuk memproses CSS Anda.
+// PERBAIKAN: Gunakan import alih-alih require()
+import tailwindcss from 'tailwindcss';
+import autoprefixer from 'autoprefixer';
+
 export default {
   plugins: [
-    // Gunakan require() untuk memuat plugin Tailwind CSS
-    // Ini adalah cara yang lebih umum dan seringkali lebih andal
-    require('tailwindcss'),
-    // Gunakan require() untuk memuat plugin Autoprefixer
-    require('autoprefixer'),
+    tailwindcss(), // Panggil sebagai fungsi
+    autoprefixer(), // Panggil sebagai fungsi
   ],
 }
