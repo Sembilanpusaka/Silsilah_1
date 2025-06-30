@@ -1,5 +1,5 @@
 // hooks/useAuth.ts
-import { useState, useEffect, useCallback } => 'react';
+import { useState, useEffect, useCallback } from 'react'; // <--- PERBAIKAN SINTAKS DI SINI
 import { supabase } from '../src/supabaseClient'; 
 import { User, Session } from '@supabase/supabase-js';
 
@@ -45,16 +45,13 @@ export const useAuth = (): UseAuthResult => {
       }
     );
 
-    // Langsung tetapkan subscription yang valid jika ada
     if (data && typeof data.subscription?.unsubscribe === 'function') {
         authListenerSubscription = data.subscription;
     } else {
-        // Jika tidak ada subscription yang valid atau unsubscribe bukan fungsi, set ke null
         authListenerSubscription = null; 
     }
 
     return () => {
-      // Hanya panggil unsubscribe jika authListenerSubscription bukan null dan unsubscribe adalah fungsi
       if (authListenerSubscription && typeof authListenerSubscription.unsubscribe === 'function') {
         authListenerSubscription.unsubscribe();
       }
