@@ -4,7 +4,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 // Sesuaikan path import untuk hooks dan components
 import { useFamilyData, FamilyDataContext } from './hooks/useFamilyData';
 import { useGuestbookData, GuestbookContext } from './hooks/useGuestbookData';
-import { useAuth } from './src/hooks/useAuth'; // Import hook autentikasi baru
+import { useAuth } from './hooks/useAuth'; // <-- PERBAIKAN PATH INI: hooks ada di root proyek
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { HomePage } from './components/HomePage';
@@ -17,7 +17,7 @@ import { GuestbookPage } from './components/GuestbookPage';
 import { AboutPage } from './components/AboutPage';
 
 const AppContent: React.FC = () => {
-    const { user, loading: authLoading, isAdminUser, logout } = useAuth(); // Gunakan useAuth
+    const { user, loading: authLoading, isAdminUser, logout } = useAuth();
     const [isLoginModalOpen, setLoginModalOpen] = useState(false);
 
     useEffect(() => {
@@ -26,15 +26,13 @@ const AppContent: React.FC = () => {
     }, []);
 
     const handleLoginSuccess = () => {
-        // useAuth akan secara otomatis memperbarui status isAdminUser setelah login Supabase
         setLoginModalOpen(false);
     };
     
     const handleLogout = async () => {
-        await logout(); // Panggil fungsi logout dari useAuth
+        await logout();
     }
 
-    // Jika autentikasi sedang dimuat, tampilkan loading screen
     if (authLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-base-100">
@@ -46,7 +44,7 @@ const AppContent: React.FC = () => {
     return (
         <div className="min-h-screen flex flex-col bg-base-100">
             <Header 
-                isAdmin={isAdminUser} // Gunakan isAdminUser dari useAuth
+                isAdmin={isAdminUser} 
                 onLoginClick={() => setLoginModalOpen(true)}
                 onLogout={handleLogout}
             />
@@ -60,7 +58,6 @@ const AppContent: React.FC = () => {
                     <Route path="/about" element={<AboutPage />} />
                     <Route 
                         path="/admin" 
-                        // Akses halaman admin hanya jika user terautentikasi DAN adalah admin
                         element={isAdminUser ? <AdminPage /> : <Navigate to="/" replace />} 
                     />
                 </Routes>
@@ -75,15 +72,11 @@ const AppContent: React.FC = () => {
     );
 }
 
-
 const App: React.FC = () => {
-    // FamilyData dan GuestbookData mungkin tidak perlu isLoaded,
-    // cukup gunakan 'loading' state dari masing-masing hook.
-    // Jika Anda ingin loading screen gabungan:
     const familyData = useFamilyData();
     const guestbookData = useGuestbookData();
 
-    if (familyData.loading || guestbookData.loading) { // Gunakan state 'loading' dari hook data
+    if (familyData.loading || guestbookData.loading) {
         return (
             <div className="flex items-center justify-center h-screen bg-base-100">
                 <div className="text-xl text-white">Memuat Silsilah Keluarga dan Guestbook...</div>

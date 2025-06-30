@@ -1,0 +1,40 @@
+/* Silsilah_1/src/index.css */
+
+/* Tailwind CSS directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom global styles (opsional) */
+body {
+  font-family: 'Inter', sans-serif; /* Ganti dengan font yang Anda inginkan */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar styling (optional, for dark mode) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1f2937; /* neutral */
+}
+
+::-webkit-scrollbar-thumb {
+  background: #334155; /* base-300 */
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569; /* Slightly lighter shade */
+}
+
+/* Adjust scrollbar color for specific elements if needed */
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: #0f172a; /* base-100 */
+}
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: #1e293b; /* base-200 */
+}
