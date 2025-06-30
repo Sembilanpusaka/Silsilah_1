@@ -1,9 +1,8 @@
-
+// components/HomePage.tsx
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useFamily } from '../hooks/useFamilyData';
-import { Individual, Gender } from '../types';
-import { MaleIcon, FemaleIcon, SearchIcon } from './Icons';
+import { Individual, Gender } from '../src/types'; // Path diperbaiki
 
 const IndividualCard: React.FC<{ individual: Individual }> = ({ individual }) => {
     return (
@@ -25,22 +24,31 @@ const IndividualCard: React.FC<{ individual: Individual }> = ({ individual }) =>
     );
 };
 
-
 export const HomePage: React.FC = () => {
-    const { data } = useFamily();
+    const { individuals, loading, error } = useFamily(); // Destructuring diperbaiki
     const [searchTerm, setSearchTerm] = useState('');
 
     const filteredIndividuals = useMemo(() => {
-        const individuals = Array.from(data.individuals.values());
+        // Pastikan individuals adalah Map sebelum diubah menjadi Array
+        const allIndividuals = Array.from(individuals.values());
         if (!searchTerm) {
-            return individuals;
+            return allIndividuals;
         }
-        return individuals.filter(ind =>
-            ind.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            ind.birth?.date?.includes(searchTerm) ||
-            ind.birth?.place?.toLowerCase().includes(searchTerm.toLowerCase())
+        return allIndividuals.filter(ind =>
+            // Tambahkan pengecekan null/undefined untuk properti yang diakses
+            (ind.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (ind.birth?.date || '').includes(searchTerm) ||
+            (ind.birth?.place || '').toLowerCase().includes(searchTerm.toLowerCase())
         );
-    }, [data.individuals, searchTerm]);
+    }, [individuals, searchTerm]); // Dependensi diperbaiki
+
+    if (loading) {
+        return <div className="text-white text-center p-8">Memuat data silsilah...</div>;
+    }
+
+    if (error) {
+        return <div className="text-error text-center p-8">Error: {error}</div>;
+    }
 
     return (
         <div className="container mx-auto p-4 md:p-8">
