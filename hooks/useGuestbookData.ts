@@ -1,7 +1,7 @@
-// hooks/useGuestbookData.ts
+// hooks/UseGuestbookData.ts
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../supabaseClient'; // Sesuaikan path ini
-import { Database } from '../types/supabase'; // Asumsikan Anda memiliki file ini dari `supabase gen types`
+import { supabase } from '../supabaseClient'; // Path diperbaiki: dari 'hooks/UseGuestbookData.ts' ke 'src/supabaseClient.ts' adalah '../supabaseClient'
+import { Database } from '../types/supabase'; // Path diperbaiki: dari 'hooks/UseGuestbookData.ts' ke 'src/types/supabase.ts' adalah '../types/supabase'
 
 export type GuestbookEntry = Database['public']['Tables']['guestbook_entries']['Row'];
 export type NewGuestbookEntry = Database['public']['Tables']['guestbook_entries']['Insert'];
@@ -12,8 +12,8 @@ interface UseGuestbookDataResult {
   loading: boolean;
   error: string | null;
   addEntry: (name: string, message: string) => Promise<void>;
-  updateEntry: (id: string, updatedEntry: UpdatedGuestbookEntry) => Promise<void>; // Tambahkan ini jika diperlukan
-  deleteEntry: (id: string) => Promise<void>; // Tambahkan ini jika diperlukan
+  updateEntry: (id: string, updatedEntry: UpdatedGuestbookEntry) => Promise<void>;
+  deleteEntry: (id: string) => Promise<void>;
   fetchEntries: () => Promise<void>;
 }
 
@@ -29,7 +29,7 @@ export const useGuestbookData = (): UseGuestbookDataResult => {
       const { data, error } = await supabase
         .from('guestbook_entries')
         .select('*')
-        .order('created_at', { ascending: false }); // Urutkan dari yang terbaru
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       setEntries(data as GuestbookEntry[]);
@@ -47,23 +47,19 @@ export const useGuestbookData = (): UseGuestbookDataResult => {
 
   const addEntry = useCallback(async (name: string, message: string) => {
     try {
-      // Supabase akan secara otomatis mengisi `id` (UUID), `created_at`, dan `user_id`
-      // jika RLS dan kolom default diatur di DB.
-      // Pastikan `user_id` di tabel guestbook_entries adalah UUID dan nullable/default ke auth.uid()
       const { data, error } = await supabase
         .from('guestbook_entries')
-        .insert({ name, message }) // Kirim hanya kolom yang perlu diisi dari frontend
-        .select(); // Mengembalikan data yang baru dimasukkan
+        .insert({ name, message })
+        .select();
 
       if (error) throw error;
-      setEntries((prev) => [data[0] as GuestbookEntry, ...prev]); // Tambahkan di awal daftar
+      setEntries((prev) => [data[0] as GuestbookEntry, ...prev]);
     } catch (err: any) {
       console.error("Error adding guestbook entry:", err.message);
       setError(`Failed to add guestbook entry: ${err.message}`);
     }
   }, []);
 
-  // Anda dapat menambahkan updateEntry dan deleteEntry jika diperlukan
   const updateEntry = useCallback(async (id: string, updatedEntry: UpdatedGuestbookEntry) => {
     try {
       const { data, error } = await supabase
@@ -102,8 +98,8 @@ export const useGuestbookData = (): UseGuestbookDataResult => {
     loading,
     error,
     addEntry,
-    updateEntry, // Tambahkan di sini
-    deleteEntry, // Tambahkan di sini
+    updateEntry,
+    deleteEntry,
     fetchEntries,
   };
 };

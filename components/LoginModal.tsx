@@ -1,8 +1,7 @@
-// LoginModal.tsx
+// src/LoginModal.tsx
 import React, { useState } from 'react';
-import { supabase } from '../supabaseClient'; // Ganti dari '../utils/supabaseClient'
+import { supabase } from './supabaseClient'; // Path diperbaiki: dari 'src/LoginModal.tsx' ke 'src/supabaseClient.ts' adalah './supabaseClient'
 
-// ... sisa kode LoginModal.tsx
 interface LoginModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -10,55 +9,53 @@ interface LoginModalProps {
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLoginSuccess }) => {
-    const [email, setEmail] = useState(''); // Mengubah dari username menjadi email
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false); // State untuk menunjukkan proses loading
+    const [loading, setLoading] = useState(false);
 
     if (!isOpen) return null;
 
-    const handleLogin = async () => { // Mengubah fungsi menjadi async
-        setError(''); // Reset error message
-        setLoading(true); // Mulai loading
+    const handleLogin = async () => {
+        setError('');
+        setLoading(true);
 
         try {
             const { error: signInError } = await supabase.auth.signInWithPassword({
-                email, // Menggunakan email
+                email,
                 password,
             });
 
             if (signInError) {
-                // Supabase memberikan pesan error yang cukup informatif
                 throw signInError;
             }
 
-            // Jika tidak ada error, login berhasil
             onLoginSuccess();
             onClose();
         } catch (err: any) {
             console.error("Login Error:", err.message);
-            setError(`Login gagal: ${err.message}`); // Menampilkan pesan error dari Supabase
+            setError(`Login gagal: ${err.message}`);
         } finally {
-            setLoading(false); // Hentikan loading, terlepas dari berhasil atau gagal
+            setLoading(false);
         }
     };
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 transition-opacity" onClick={onClose}>
             <div className="bg-base-200 rounded-lg shadow-xl p-8 w-full max-w-sm" onClick={e => e.stopPropagation()}>
-                <h2 className="text-2xl font-bold text-white mb-6 text-center">Login Admin</h2> {/* Mengubah judul menjadi Login Admin */}
+                <h2 className="text-2xl font-bold text-white mb-6 text-center">Login Admin</h2>
                 <div className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1" htmlFor="email">Email</label> {/* Mengubah label ke Email */}
+                        <label className="block text-sm font-medium text-gray-300 mb-1" htmlFor="email">Email</label>
                         <input
-                            id="email" // Mengubah id ke email
-                            type="email" // Mengubah type ke email
+                            id="email"
+                            type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             className="w-full bg-base-300 border border-gray-600 rounded-md p-2 text-white"
-                            placeholder="your@email.com" // Placeholder yang lebih relevan
-                            autoComplete="username" // Untuk autofill browser (email sering dianggap username)
-                            required // Tambahkan required
+                            placeholder="your@email.com"
+                            autoComplete="username"
+                            required
                         />
                     </div>
                     <div>
@@ -70,17 +67,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin
                             onChange={(e) => setPassword(e.target.value)}
                             className="w-full bg-base-300 border border-gray-600 rounded-md p-2 text-white"
                             placeholder="password"
-                            autoComplete="current-password" // Untuk autofill browser
-                            required // Tambahkan required
+                            autoComplete="current-password"
+                            required
                         />
                     </div>
                     {error && <p className="text-error text-sm text-center">{error}</p>}
                     <button
                         onClick={handleLogin}
                         className="w-full bg-primary hover:bg-secondary text-white font-bold py-2 px-4 rounded-md transition-colors"
-                        disabled={loading} // Nonaktifkan tombol saat loading
+                        disabled={loading}
                     >
-                        {loading ? 'Logging in...' : 'Login'} {/* Teks tombol berubah saat loading */}
+                        {loading ? 'Logging in...' : 'Login'}
                     </button>
                 </div>
             </div>
