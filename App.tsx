@@ -4,7 +4,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 // Sesuaikan path import untuk hooks dan components
 import { useFamilyData, FamilyDataContext } from './hooks/useFamilyData';
 import { useGuestbookData, GuestbookContext } from './hooks/useGuestbookData';
-import { useAuth } from './hooks/useAuth'; // <-- PERBAIKAN PATH INI: hooks ada di root proyek
+import { useAuth } from './hooks/useAuth'; 
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { HomePage } from './components/HomePage';
@@ -21,7 +21,6 @@ const AppContent: React.FC = () => {
     const [isLoginModalOpen, setLoginModalOpen] = useState(false);
 
     useEffect(() => {
-        // Tambahkan kelas dark mode ke HTML root
         document.documentElement.classList.add('dark');
     }, []);
 
@@ -33,6 +32,7 @@ const AppContent: React.FC = () => {
         await logout();
     }
 
+    // Auth loading guard
     if (authLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-base-100">
@@ -76,7 +76,9 @@ const App: React.FC = () => {
     const familyData = useFamilyData();
     const guestbookData = useGuestbookData();
 
-    if (familyData.loading || guestbookData.loading) {
+    // Pastikan objek hook tidak null/undefined sebelum mengakses propertinya
+    // Ini adalah guard tambahan untuk mengatasi TypeError pada 'individuals'
+    if (!familyData || !guestbookData || familyData.loading || guestbookData.loading) {
         return (
             <div className="flex items-center justify-center h-screen bg-base-100">
                 <div className="text-xl text-white">Memuat Silsilah Keluarga dan Guestbook...</div>
