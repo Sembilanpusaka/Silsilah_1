@@ -1,7 +1,7 @@
-// hooks/UseGuestbookData.ts
+// hooks/useGuestbookData.ts
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../supabaseClient'; // Path diperbaiki: dari 'hooks/UseGuestbookData.ts' ke 'src/supabaseClient.ts' adalah '../supabaseClient'
-import { Database } from '../types/supabase'; // Path diperbaiki: dari 'hooks/UseGuestbookData.ts' ke 'src/types/supabase.ts' adalah '../types/supabase'
+import { supabase } from '../src/supabaseClient'; // Path diperbaiki
+import { Database } from '../src/types/supabase'; // Path diperbaiki, asumsi Anda membuat src/types/supabase.ts
 
 export type GuestbookEntry = Database['public']['Tables']['guestbook_entries']['Row'];
 export type NewGuestbookEntry = Database['public']['Tables']['guestbook_entries']['Insert'];
