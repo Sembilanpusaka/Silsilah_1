@@ -1,6 +1,6 @@
 // hooks/useAuth.ts
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../src/supabaseClient'; // Path diperbaiki
+import { useState, useEffect, useCallback } => 'react';
+import { supabase } from '../src/supabaseClient'; 
 import { User, Session } from '@supabase/supabase-js';
 
 interface UseAuthResult {
@@ -18,7 +18,8 @@ export const useAuth = (): UseAuthResult => {
   const [isAdminUser, setIsAdminUser] = useState(false); // Default bukan admin
 
   useEffect(() => {
-    // Fungsi untuk mendapatkan sesi awal
+    let authListenerSubscription: { unsubscribe: () => void } | null = null; 
+
     const getSession = async () => {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error) {
@@ -28,29 +29,37 @@ export const useAuth = (): UseAuthResult => {
       } else {
         setSession(session);
         setUser(session?.user || null);
-        // Tentukan admin berdasarkan email atau metadata lainnya
-        // Contoh: Jika email 'admin@example.com' dianggap admin
-        setIsAdminUser(session?.user?.email === 'admin@example.com'); // Sesuaikan ini
+        setIsAdminUser(session?.user?.email === 'admin@example.com'); 
       }
       setLoading(false);
     };
 
     getSession();
 
-    // Langganan perubahan status auth
-    const { data: authListener } = supabase.auth.onAuthStateChange(
+    const { data } = supabase.auth.onAuthStateChange( 
       (_event, session) => {
         setSession(session);
         setUser(session?.user || null);
-        setIsAdminUser(session?.user?.email === 'admin@example.com'); // Sesuaikan ini
+        setIsAdminUser(session?.user?.email === 'admin@example.com'); 
         setLoading(false);
       }
     );
 
+    // Langsung tetapkan subscription yang valid jika ada
+    if (data && typeof data.subscription?.unsubscribe === 'function') {
+        authListenerSubscription = data.subscription;
+    } else {
+        // Jika tidak ada subscription yang valid atau unsubscribe bukan fungsi, set ke null
+        authListenerSubscription = null; 
+    }
+
     return () => {
-      authListener?.unsubscribe();
+      // Hanya panggil unsubscribe jika authListenerSubscription bukan null dan unsubscribe adalah fungsi
+      if (authListenerSubscription && typeof authListenerSubscription.unsubscribe === 'function') {
+        authListenerSubscription.unsubscribe();
+      }
     };
-  }, []);
+  }, []); 
 
   const logout = useCallback(async () => {
     setLoading(true);
