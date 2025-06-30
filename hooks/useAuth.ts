@@ -1,6 +1,6 @@
 // hooks/useAuth.ts
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../src/supabaseClient'; 
+import { supabase } from '../src/supabaseClient'; // Path diperbaiki
 import { User, Session } from '@supabase/supabase-js';
 
 interface UseAuthResult {
