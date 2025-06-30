@@ -76,9 +76,12 @@ const App: React.FC = () => {
     const familyData = useFamilyData();
     const guestbookData = useGuestbookData();
 
-    // Pastikan objek hook tidak null/undefined sebelum mengakses propertinya
-    // Ini adalah guard tambahan untuk mengatasi TypeError pada 'individuals'
+    // Log the familyData object before the guard
+    console.log("App.tsx: familyData from useFamilyData:", familyData);
+    console.log("App.tsx: guestbookData from useGuestbookData:", guestbookData);
+
     if (!familyData || !guestbookData || familyData.loading || guestbookData.loading) {
+        console.log("App.tsx: Menampilkan loading screen data.");
         return (
             <div className="flex items-center justify-center h-screen bg-base-100">
                 <div className="text-xl text-white">Memuat Silsilah Keluarga dan Guestbook...</div>
@@ -86,6 +89,7 @@ const App: React.FC = () => {
         );
     }
 
+    console.log("App.tsx: Data familyData dan guestbookData selesai dimuat.");
     return (
         <FamilyDataContext.Provider value={familyData}>
             <GuestbookContext.Provider value={guestbookData}>
