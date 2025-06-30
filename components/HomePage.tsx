@@ -2,13 +2,14 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useFamily } from '../hooks/useFamilyData';
-import { Individual, Gender } from '../src/types'; // Path diperbaiki
+import { Individual, Gender } from '../src/types'; 
+import { MaleIcon, FemaleIcon, SearchIcon } from './Icons'; // <-- PERBAIKAN DI SINI: Import SearchIcon
 
 const IndividualCard: React.FC<{ individual: Individual }> = ({ individual }) => {
     return (
         <Link to={`/individual/${individual.id}`} className="block bg-base-200 rounded-lg shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
             <div className="flex items-center p-4">
-                <img className="h-20 w-20 rounded-full object-cover" src={individual.photoUrl || 'https://picsum.photos/seed/person/100/100'} alt={individual.name} />
+                <img className="h-20 w-20 rounded-full object-cover" src={individual.photo_url || 'https://picsum.photos/seed/person/100/100'} alt={individual.name || 'Unknown'} />
                 <div className="ml-4 flex-grow">
                     <div className="flex justify-between items-start">
                         <h3 className="text-lg font-bold text-white">{individual.name}</h3>
@@ -16,7 +17,7 @@ const IndividualCard: React.FC<{ individual: Individual }> = ({ individual }) =>
                     </div>
                     <p className="text-sm text-gray-400">{individual.profession || 'No profession listed'}</p>
                     <p className="text-xs text-gray-500 mt-1">
-                        {individual.birth?.date || '????'} - {individual.death?.date || '????'}
+                        {individual.birth_date ? `Lahir: ${individual.birth_date}` : '????'} - {individual.death_date ? `Meninggal: ${individual.death_date}` : '????'}
                     </p>
                 </div>
             </div>
@@ -24,23 +25,22 @@ const IndividualCard: React.FC<{ individual: Individual }> = ({ individual }) =>
     );
 };
 
+
 export const HomePage: React.FC = () => {
-    const { individuals, loading, error } = useFamily(); // Destructuring diperbaiki
+    const { individuals, loading, error } = useFamily(); 
     const [searchTerm, setSearchTerm] = useState('');
 
     const filteredIndividuals = useMemo(() => {
-        // Pastikan individuals adalah Map sebelum diubah menjadi Array
         const allIndividuals = Array.from(individuals.values());
         if (!searchTerm) {
             return allIndividuals;
         }
         return allIndividuals.filter(ind =>
-            // Tambahkan pengecekan null/undefined untuk properti yang diakses
             (ind.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (ind.birth?.date || '').includes(searchTerm) ||
-            (ind.birth?.place || '').toLowerCase().includes(searchTerm.toLowerCase())
+            (ind.birth_date || '').includes(searchTerm) ||
+            (ind.birth_place || '').toLowerCase().includes(searchTerm.toLowerCase())
         );
-    }, [individuals, searchTerm]); // Dependensi diperbaiki
+    }, [individuals, searchTerm]);
 
     if (loading) {
         return <div className="text-white text-center p-8">Memuat data silsilah...</div>;
