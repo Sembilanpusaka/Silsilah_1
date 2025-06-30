@@ -1,6 +1,6 @@
-// src/hooks/useAuth.ts
-import { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient'; // Path disesuaikan dari hooks/ ke src/
+// hooks/useAuth.ts
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../src/supabaseClient'; 
 import { User, Session } from '@supabase/supabase-js';
 
 interface UseAuthResult {
