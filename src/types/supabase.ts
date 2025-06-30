@@ -26,7 +26,7 @@ export type Database = {
           created_at?: string | null
           divorce_date?: string | null
           divorce_place?: string | null
-          id: string
+          id?: string
           marriage_date?: string | null
           marriage_place?: string | null
           spouse1_id?: string | null
@@ -97,7 +97,7 @@ export type Database = {
           notes: string | null
           photo_url: string | null
           profession: string | null
-          references: Json | null
+          related_references: Json | null
           sources: Json | null
           works: Json | null
         }
@@ -111,12 +111,12 @@ export type Database = {
           description?: string | null
           education?: Json | null
           gender: Database["public"]["Enums"]["gender_enum"]
-          id: string
+          id?: string
           name: string
           notes?: string | null
           photo_url?: string | null
           profession?: string | null
-          references?: Json | null
+          related_references?: Json | null
           sources?: Json | null
           works?: Json | null
         }
@@ -135,7 +135,7 @@ export type Database = {
           notes?: string | null
           photo_url?: string | null
           profession?: string | null
-          references?: Json | null
+          related_references?: Json | null
           sources?: Json | null
           works?: Json | null
         }
@@ -157,7 +157,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      gender_enum: "Male" | "Female" | "Other"
+      gender_enum: "male" | "female" | "unknown"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -273,7 +273,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      gender_enum: ["Male", "Female", "Other"],
+      gender_enum: ["male", "female", "unknown"],
     },
   },
 } as const
