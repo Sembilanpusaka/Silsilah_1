@@ -1,6 +1,6 @@
 // LoginModal.tsx
 import React, { useState } from 'react';
-import { supabase } from '../utils/supabaseClient'; // Sesuaikan path ini sesuai lokasi supabaseClient.ts Anda
+import { supabase } from '../src/supabaseClient.ts'; // Sesuaikan path ini sesuai lokasi supabaseClient.ts Anda
 
 interface LoginModalProps {
     isOpen: boolean;
