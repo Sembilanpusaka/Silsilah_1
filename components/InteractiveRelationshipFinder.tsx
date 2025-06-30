@@ -1,8 +1,9 @@
-
+// components/InteractiveRelationshipFinder.tsx
 import React, { useState, useMemo } from 'react';
 import { useFamily } from '../hooks/useFamilyData';
 import { Link } from 'react-router-dom';
-import { Individual, Family } from '../types';
+import { Individual, Family } from '../src/types'; // Path diperbaiki
+import { SearchIcon } from './Icons';
 
 type PathNode = {
     id: string;
@@ -10,14 +11,17 @@ type PathNode = {
 };
 
 export const InteractiveRelationshipFinder: React.FC = () => {
-    const { data } = useFamily();
+    // Destructuring diperbaiki
+    const { individuals, families, loading, error } = useFamily(); 
     const [person1Id, setPerson1Id] = useState<string>('');
     const [person2Id, setPerson2Id] = useState<string>('');
 
-    const individuals = useMemo(() => Array.from(data.individuals.values()).sort((a,b) => a.name.localeCompare(b.name)), [data.individuals]);
+    const allIndividualsSorted = useMemo(() => {
+        return Array.from(individuals.values()).sort((a,b) => (a.name || '').localeCompare(b.name || ''));
+    }, [individuals]); // Dependensi diperbaiki
 
     const path = useMemo<PathNode[] | null>(() => {
-        if (!person1Id || !person2Id || person1Id === person2Id) return null;
+        if (!person1Id || !person2Id || person1Id === person2Id || individuals.size === 0) return null; // Tambahkan cek individu kosong
 
         const queue: { id: string; path: PathNode[] }[] = [{ id: person1Id, path: [{ id: person1Id, relationship: 'Start' }] }];
         const visited = new Set<string>([person1Id]);
@@ -29,39 +33,42 @@ export const InteractiveRelationshipFinder: React.FC = () => {
                 return currentPath;
             }
 
-            const currentPerson = data.individuals.get(id)!;
-            
-            // Parents
-            const parentFamily = currentPerson.childInFamilyId ? data.families.get(currentPerson.childInFamilyId) : undefined;
+            const currentPerson = individuals.get(id); 
+            if (!currentPerson) continue; // Lewati jika individu tidak ditemukan
+
+            // Parents (Cari keluarga di mana currentPerson adalah anak)
+            const parentFamily = currentPerson.child_in_family_id ? families.get(currentPerson.child_in_family_id) : undefined; // Perbaiki nama properti
             if (parentFamily) {
-                if(parentFamily.spouse1Id && !visited.has(parentFamily.spouse1Id)) {
-                    visited.add(parentFamily.spouse1Id);
-                    queue.push({ id: parentFamily.spouse1Id, path: [...currentPath, { id: parentFamily.spouse1Id, relationship: 'Ayah' }] });
+                if(parentFamily.spouse1_id && !visited.has(parentFamily.spouse1_id)) { 
+                    visited.add(parentFamily.spouse1_id);
+                    queue.push({ id: parentFamily.spouse1_id, path: [...currentPath, { id: parentFamily.spouse1_id, relationship: 'Ayah' }] }); 
                 }
-                if(parentFamily.spouse2Id && !visited.has(parentFamily.spouse2Id)) {
-                    visited.add(parentFamily.spouse2Id);
-                    queue.push({ id: parentFamily.spouse2Id, path: [...currentPath, { id: parentFamily.spouse2Id, relationship: 'Ibu' }] });
+                if(parentFamily.spouse2_id && !visited.has(parentFamily.spouse2_id)) { 
+                    visited.add(parentFamily.spouse2_id);
+                    queue.push({ id: parentFamily.spouse2_id, path: [...currentPath, { id: parentFamily.spouse2_id, relationship: 'Ibu' }] }); 
                 }
             }
 
-            // Spouses and Children
-            const spouseFamilies = Array.from(data.families.values()).filter(f => f.spouse1Id === id || f.spouse2Id === id);
+            // Spouses and Children (Cari keluarga di mana currentPerson adalah pasangan)
+            const spouseFamilies = Array.from(families.values()).filter(f => f.spouse1_id === id || f.spouse2_id === id); // Perbaiki nama properti
             for(const family of spouseFamilies) {
-                const spouseId = family.spouse1Id === id ? family.spouse2Id : family.spouse1Id;
+                const spouseId = family.spouse1_id === id ? family.spouse2_id : family.spouse1_id; 
                 if(spouseId && !visited.has(spouseId)) {
                     visited.add(spouseId);
                     queue.push({ id: spouseId, path: [...currentPath, { id: spouseId, relationship: 'Pasangan' }] });
                 }
-                for(const childId of family.childrenIds) {
-                    if(!visited.has(childId)) {
-                        visited.add(childId);
-                        queue.push({ id: childId, path: [...currentPath, { id: childId, relationship: 'Anak' }] });
+                if (family.children_ids && Array.isArray(family.children_ids)) { // Perbaiki nama properti dan pastikan array
+                    for(const childId of family.children_ids) {
+                        if(!visited.has(childId)) {
+                            visited.add(childId);
+                            queue.push({ id: childId, path: [...currentPath, { id: childId, relationship: 'Anak' }] });
+                        }
                     }
                 }
             }
         }
         return null;
-    }, [person1Id, person2Id, data]);
+    }, [person1Id, person2Id, individuals, families]); // Dependensi diperbaiki
 
     const renderPath = () => {
         if (!path) {
@@ -73,12 +80,13 @@ export const InteractiveRelationshipFinder: React.FC = () => {
                 <h3 className="text-xl font-bold text-white text-center mb-6">Jalur Hubungan</h3>
                 <div className="flex flex-wrap justify-center items-center gap-2">
                     {path.map((node, index) => {
-                        const person = data.individuals.get(node.id)!;
+                        const person = individuals.get(node.id); 
+                        if (!person) return null; // Guard jika individu tidak ditemukan
                         return (
                            <React.Fragment key={node.id}>
                                 {index > 0 && <div className="text-gray-400 font-bold text-2xl mx-2">&rarr;</div>}
                                 <Link to={`/individual/${person.id}`} className="flex flex-col items-center p-3 bg-base-300 rounded-lg text-center hover:bg-primary transition-colors">
-                                    <img src={person.photoUrl || `https://picsum.photos/seed/${person.id}/80/80`} className="w-20 h-20 rounded-full object-cover mb-2" alt={person.name} />
+                                    <img src={person.photo_url || `https://picsum.photos/seed/${person.id}/80/80`} className="w-20 h-20 rounded-full object-cover mb-2" alt={person.name || 'Unknown'} />
                                     <p className="font-semibold text-white">{person.name}</p>
                                     {index > 0 && <p className="text-sm text-accent">{node.relationship}</p>}
                                 </Link>
@@ -90,6 +98,18 @@ export const InteractiveRelationshipFinder: React.FC = () => {
         );
     };
 
+    if (loading) {
+        return <div className="text-white text-center p-8">Memuat data silsilah untuk pencarian hubungan...</div>;
+    }
+
+    if (error) {
+        return <div className="text-error text-center p-8">Error: {error}</div>;
+    }
+
+    if (individuals.size === 0) {
+        return <div className="text-white text-center p-8">Tidak ada data individu untuk mencari hubungan. Silakan tambahkan individu dari Admin Page.</div>;
+    }
+
     return (
         <div className="container mx-auto p-4 md:p-8">
             <div className="bg-base-200 p-8 rounded-lg shadow-xl">
@@ -100,14 +120,14 @@ export const InteractiveRelationshipFinder: React.FC = () => {
                         <label htmlFor="person1" className="block text-sm font-medium text-gray-300 mb-1">Individu 1</label>
                         <select id="person1" value={person1Id} onChange={e => setPerson1Id(e.target.value)} className="w-full bg-base-300 border border-gray-600 rounded-md p-2 text-white focus:ring-primary focus:border-primary">
                             <option value="">Pilih individu...</option>
-                            {individuals.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                            {allIndividualsSorted.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                         </select>
                     </div>
                     <div>
                         <label htmlFor="person2" className="block text-sm font-medium text-gray-300 mb-1">Individu 2</label>
                         <select id="person2" value={person2Id} onChange={e => setPerson2Id(e.target.value)} className="w-full bg-base-300 border border-gray-600 rounded-md p-2 text-white focus:ring-primary focus:border-primary">
                             <option value="">Pilih individu...</option>
-                            {individuals.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                            {allIndividualsSorted.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                         </select>
                     </div>
                 </div>
