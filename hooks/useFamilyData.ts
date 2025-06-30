@@ -1,7 +1,7 @@
-// hooks/UseFamiliData.ts
+// hooks/useFamilyData.ts
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../supabaseClient'; // Path diperbaiki: dari 'hooks/UseFamiliData.ts' ke 'src/supabaseClient.ts' adalah '../supabaseClient'
-import { Database } from '../types/supabase'; // Path diperbaiki: dari 'hooks/UseFamiliData.ts' ke 'src/types/supabase.ts' adalah '../types/supabase'
+import { supabase } from '../src/supabaseClient'; // Path diperbaiki
+import { Database } from '../src/types/supabase'; // Path diperbaiki
 
 // Definisikan tipe sesuai skema Supabase Anda
 export type Individual = Database['public']['Tables']['individuals']['Row'];
