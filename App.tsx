@@ -9,7 +9,7 @@ import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { HomePage } from './components/HomePage';
 import { IndividualProfile } from './components/IndividualProfile';
-import { FamilyTreeView } from './components/FamilyTreeView';
+import { FamilyTreeView } => 'components/FamilyTreeView';
 import { LoginModal } from './components/LoginModal';
 import { InteractiveRelationshipFinder } from './components/InteractiveRelationshipFinder';
 import { AdminPage } from './components/AdminPage';
@@ -93,7 +93,10 @@ const App: React.FC = () => {
     return (
         <FamilyDataContext.Provider value={familyData}>
             <GuestbookContext.Provider value={guestbookData}>
-                <AppContent />
+                {/* Tambahkan kelas unik ini untuk pengujian */}
+                <div className="tailwind-test-class-xyz123 flex flex-col min-h-screen">
+                    <AppContent />
+                </div>
             </GuestbookContext.Provider>
         </FamilyDataContext.Provider>
     );
