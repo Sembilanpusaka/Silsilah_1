@@ -1,10 +1,7 @@
-// Silsilah_1/src/components/GuestbookPage.tsx
-import React, { useState } from 'react';
-import { useGuestbook } from '../hooks/useGuestbookData'; // Ini akan mengimpor useGuestbook dan GuestbookContext
-import { Tables } from '../types/supabase'; // Pastikan path ini benar
-type GuestbookEntry = Tables<'guestbook_entries'>['Row'];
 
-import { GuestbookIcon, UserIcon } from './Icons'; // Pastikan path ini benar
+import React, { useState } from 'react';
+import { useGuestbook } from '../hooks/useGuestbookData';
+import { GuestbookIcon, UserIcon } from './Icons';
 
 export const GuestbookPage: React.FC = () => {
     const { entries, addEntry } = useGuestbook();
@@ -12,20 +9,16 @@ export const GuestbookPage: React.FC = () => {
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!name.trim() || !message.trim()) {
             setError('Nama dan pesan tidak boleh kosong.');
             return;
         }
-        try {
-            await addEntry(name, message);
-            setName('');
-            setMessage('');
-            setError('');
-        } catch (err: any) {
-            setError(err.message || 'Gagal mengirim pesan.');
-        }
+        addEntry(name, message);
+        setName('');
+        setMessage('');
+        setError('');
     };
 
     return (
@@ -80,7 +73,7 @@ export const GuestbookPage: React.FC = () => {
                                     <div className="flex justify-between items-center">
                                         <p className="font-bold text-white">{entry.name}</p>
                                         <p className="text-xs text-gray-500">
-                                            {new Date(entry.created_at!).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
+                                            {new Date(entry.date).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
                                         </p>
                                     </div>
                                     <p className="text-gray-300 mt-1 whitespace-pre-wrap">{entry.message}</p>

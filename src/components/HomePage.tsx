@@ -1,27 +1,23 @@
+
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useFamily } from '../hooks/useFamilyData';
-import { Tables } from '../types/supabase';
-type Individual = Tables<'individuals'>['Row'];
-type Gender = Tables<'public'>['Enums']['gender_enum'];
-
+import { Individual, Gender } from '../types';
 import { MaleIcon, FemaleIcon, SearchIcon } from './Icons';
 
 const IndividualCard: React.FC<{ individual: Individual }> = ({ individual }) => {
     return (
         <Link to={`/individual/${individual.id}`} className="block bg-base-200 rounded-lg shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
-            {/* Flexbox di dalam kartu untuk menata gambar dan teks */}
             <div className="flex items-center p-4">
-                <img className="h-20 w-20 rounded-full object-cover" src={individual.photo_url || 'https://picsum.photos/seed/person/100/100'} alt={individual.name || 'Unknown'} />
+                <img className="h-20 w-20 rounded-full object-cover" src={individual.photoUrl || 'https://picsum.photos/seed/person/100/100'} alt={individual.name} />
                 <div className="ml-4 flex-grow">
-                    {/* Flexbox untuk nama dan ikon gender */}
                     <div className="flex justify-between items-start">
                         <h3 className="text-lg font-bold text-white">{individual.name}</h3>
-                        {individual.gender === 'male' ? <MaleIcon className="w-5 h-5 text-blue-400" /> : <FemaleIcon className="w-5 h-5 text-pink-400" />}
+                        {individual.gender === Gender.Male ? <MaleIcon className="w-5 h-5 text-blue-400" /> : <FemaleIcon className="w-5 h-5 text-pink-400" />}
                     </div>
                     <p className="text-sm text-gray-400">{individual.profession || 'No profession listed'}</p>
                     <p className="text-xs text-gray-500 mt-1">
-                        {individual.birth_date || '????'} - {individual.death_date || '????'}
+                        {individual.birth?.date || '????'} - {individual.death?.date || '????'}
                     </p>
                 </div>
             </div>
@@ -41,19 +37,17 @@ export const HomePage: React.FC = () => {
         }
         return individuals.filter(ind =>
             ind.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            ind.birth_date?.includes(searchTerm) ||
-            ind.birth_place?.toLowerCase().includes(searchTerm.toLowerCase())
+            ind.birth?.date?.includes(searchTerm) ||
+            ind.birth?.place?.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [data.individuals, searchTerm]);
 
     return (
-        // Container utama halaman: mx-auto untuk menengahkan, p-x untuk padding
         <div className="container mx-auto p-4 md:p-8">
             <div className="mb-8">
                 <h1 className="text-4xl font-bold text-white mb-2">Daftar Individu</h1>
                 <p className="text-lg text-gray-400">Jelajahi semua individu dalam silsilah keluarga.</p>
             </div>
-            {/* Bagian pencarian: relatif untuk ikon */}
             <div className="relative mb-8">
                 <input
                     type="text"
@@ -62,13 +56,11 @@ export const HomePage: React.FC = () => {
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full bg-base-200 border border-base-300 rounded-lg py-3 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-primary"
                 />
-                {/* Ikon pencarian: absolute positioning */}
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <SearchIcon className="w-5 h-5 text-gray-400" />
                 </div>
             </div>
 
-            {/* Grid untuk menata kartu individu dengan gap */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {filteredIndividuals.map(individual => (
                     <IndividualCard key={individual.id} individual={individual} />

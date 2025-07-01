@@ -1,11 +1,8 @@
-// Silsilah_1/src/components/InteractiveRelationshipFinder.tsx
+
 import React, { useState, useMemo } from 'react';
 import { useFamily } from '../hooks/useFamilyData';
 import { Link } from 'react-router-dom';
-// Pastikan tipe yang diimpor dari supabase.ts
-import { Tables } from '../types/supabase';
-type Individual = Tables<'individuals'>['Row'];
-type Family = Tables<'families'>['Row'];
+import { Individual, Family } from '../types';
 
 type PathNode = {
     id: string;
@@ -27,40 +24,35 @@ export const InteractiveRelationshipFinder: React.FC = () => {
 
         while (queue.length > 0) {
             const { id, path: currentPath } = queue.shift()!;
-
+            
             if (id === person2Id) {
                 return currentPath;
             }
 
             const currentPerson = data.individuals.get(id)!;
-
+            
             // Parents
-            // Perbaikan: Gunakan child_in_family_id
-            const parentFamily = currentPerson.child_in_family_id ? data.families.get(currentPerson.child_in_family_id) : undefined;
+            const parentFamily = currentPerson.childInFamilyId ? data.families.get(currentPerson.childInFamilyId) : undefined;
             if (parentFamily) {
-                // Perbaikan: Gunakan spouse1_id dan spouse2_id
-                if(parentFamily.spouse1_id && !visited.has(parentFamily.spouse1_id)) {
-                    visited.add(parentFamily.spouse1_id);
-                    queue.push({ id: parentFamily.spouse1_id, path: [...currentPath, { id: parentFamily.spouse1_id, relationship: 'Ayah' }] });
+                if(parentFamily.spouse1Id && !visited.has(parentFamily.spouse1Id)) {
+                    visited.add(parentFamily.spouse1Id);
+                    queue.push({ id: parentFamily.spouse1Id, path: [...currentPath, { id: parentFamily.spouse1Id, relationship: 'Ayah' }] });
                 }
-                if(parentFamily.spouse2_id && !visited.has(parentFamily.spouse2_id)) {
-                    visited.add(parentFamily.spouse2_id);
-                    queue.push({ id: parentFamily.spouse2_id, path: [...currentPath, { id: parentFamily.spouse2_id, relationship: 'Ibu' }] });
+                if(parentFamily.spouse2Id && !visited.has(parentFamily.spouse2Id)) {
+                    visited.add(parentFamily.spouse2Id);
+                    queue.push({ id: parentFamily.spouse2Id, path: [...currentPath, { id: parentFamily.spouse2Id, relationship: 'Ibu' }] });
                 }
             }
 
             // Spouses and Children
-            // Perbaikan: Gunakan spouse1_id dan spouse2_id
-            const spouseFamilies = Array.from(data.families.values()).filter(f => f.spouse1_id === id || f.spouse2_id === id);
+            const spouseFamilies = Array.from(data.families.values()).filter(f => f.spouse1Id === id || f.spouse2Id === id);
             for(const family of spouseFamilies) {
-                // Perbaikan: Gunakan spouse1_id dan spouse2_id
-                const spouseId = family.spouse1_id === id ? family.spouse2_id : family.spouse1_id;
+                const spouseId = family.spouse1Id === id ? family.spouse2Id : family.spouse1Id;
                 if(spouseId && !visited.has(spouseId)) {
                     visited.add(spouseId);
                     queue.push({ id: spouseId, path: [...currentPath, { id: spouseId, relationship: 'Pasangan' }] });
                 }
-                // Perbaikan: Gunakan children_ids dan tambahkan null check
-                for(const childId of family.children_ids || []) {
+                for(const childId of family.childrenIds) {
                     if(!visited.has(childId)) {
                         visited.add(childId);
                         queue.push({ id: childId, path: [...currentPath, { id: childId, relationship: 'Anak' }] });
@@ -86,8 +78,7 @@ export const InteractiveRelationshipFinder: React.FC = () => {
                            <React.Fragment key={node.id}>
                                 {index > 0 && <div className="text-gray-400 font-bold text-2xl mx-2">&rarr;</div>}
                                 <Link to={`/individual/${person.id}`} className="flex flex-col items-center p-3 bg-base-300 rounded-lg text-center hover:bg-primary transition-colors">
-                                    {/* Perbaikan: Gunakan photo_url */}
-                                    <img src={person.photo_url || `https://picsum.photos/seed/${person.id}/80/80`} className="w-20 h-20 rounded-full object-cover mb-2" alt={person.name || 'Unknown'} />
+                                    <img src={person.photoUrl || `https://picsum.photos/seed/${person.id}/80/80`} className="w-20 h-20 rounded-full object-cover mb-2" alt={person.name} />
                                     <p className="font-semibold text-white">{person.name}</p>
                                     {index > 0 && <p className="text-sm text-accent">{node.relationship}</p>}
                                 </Link>

@@ -1,11 +1,6 @@
 import React, { useState } from 'react';
 import { useFamily } from '../hooks/useFamilyData';
-// Pastikan tipe Individual dan Family yang Anda import sesuai dengan tipe Supabase yang benar
-// Misalnya, jika Anda menggunakan tipe dari supabase.ts, Anda mungkin ingin mengimpornya sebagai:
-import { Tables } from '../types/supabase'; // Asumsi Anda menggunakan tipe yang digenerate supabase
-type Individual = Tables<'individuals'>['Row'];
-type Family = Tables<'families'>['Row'];
-
+import { Individual, Family } from '../types';
 import { EditIcon, DeleteIcon, PlusIcon } from './Icons';
 import { Modal } from './Modal';
 import { AdminIndividualForm } from './AdminIndividualForm';
@@ -19,7 +14,6 @@ export const AdminPage: React.FC = () => {
     const [editingIndividual, setEditingIndividual] = useState<Individual | null>(null);
     const [editingFamily, setEditingFamily] = useState<Family | null>(null);
 
-    // Mengonversi Map ke Array
     const individuals = Array.from(data.individuals.values());
     const families = Array.from(data.families.values());
 
@@ -33,12 +27,7 @@ export const AdminPage: React.FC = () => {
         setFamilyModalOpen(true);
     };
 
-    // Fungsi handleSaveIndividual dan handleSaveFamily mungkin juga perlu disesuaikan
-    // agar data yang dikirim ke Supabase menggunakan snake_case yang benar
-    // Ini tergantung bagaimana AdminIndividualForm dan AdminFamilyForm membentuk datanya
     const handleSaveIndividual = (individualData: Individual | Omit<Individual, 'id'>) => {
-        // PERHATIAN: Pastikan AdminIndividualForm mengirim data dengan nama properti yang benar (snake_case)
-        // Misal: { birth_date: "...", name: "..." }
         if ('id' in individualData) {
             updateIndividual(individualData as Individual);
         } else {
@@ -48,8 +37,6 @@ export const AdminPage: React.FC = () => {
     };
 
     const handleSaveFamily = (familyData: Family | Omit<Family, 'id'>) => {
-        // PERHATIAN: Pastikan AdminFamilyForm mengirim data dengan nama properti yang benar (snake_case)
-        // Misal: { spouse1_id: "...", children_ids: [...] }
         if ('id' in familyData) {
             updateFamily(familyData as Family);
         } else {
@@ -57,21 +44,20 @@ export const AdminPage: React.FC = () => {
         }
         setFamilyModalOpen(false);
     };
-
+    
     const handleDeleteIndividual = (id: string) => {
         if(window.confirm("Apakah Anda yakin ingin menghapus individu ini? Tindakan ini tidak dapat diurungkan.")){
             deleteIndividual(id);
         }
     };
-
+    
     const handleDeleteFamily = (id: string) => {
         if(window.confirm("Apakah Anda yakin ingin menghapus keluarga ini? Ini akan menghapus hubungan pasangan dan orang tua-anak.")){
             deleteFamily(id);
         }
     };
 
-    // Fungsi getSpouseName perlu menggunakan spouse1_id dan spouse2_id
-    const getSpouseName = (id?: string | null) => id ? data.individuals.get(id)?.name : 'N/A'; // Tambah null check untuk id
+    const getSpouseName = (id?: string) => id ? data.individuals.get(id)?.name : 'N/A';
 
     return (
         <div className="container mx-auto p-4 md:p-8">
@@ -99,9 +85,8 @@ export const AdminPage: React.FC = () => {
                             {individuals.map(ind => (
                                 <tr key={ind.id} className="border-b border-base-300 hover:bg-base-300/50">
                                     <td className="p-3 font-medium">{ind.name}</td>
-                                    {/* Perbaikan: gunakan ind.birth_date dan ind.death_date, dan tambahkan nullish coalescing */}
-                                    <td className="p-3 hidden md:table-cell">{ind.birth_date ?? '-'}</td>
-                                    <td className="p-3 hidden md:table-cell">{ind.death_date ?? '-'}</td>
+                                    <td className="p-3 hidden md:table-cell">{ind.birth?.date || '-'}</td>
+                                    <td className="p-3 hidden md:table-cell">{ind.death?.date || '-'}</td>
                                     <td className="p-3 flex items-center space-x-2">
                                         <button onClick={() => openIndividualModal(ind)} className="p-2 text-blue-400 hover:text-blue-300"><EditIcon/></button>
                                         <button onClick={() => handleDeleteIndividual(ind.id)} className="p-2 text-error hover:text-red-400"><DeleteIcon/></button>
@@ -134,11 +119,9 @@ export const AdminPage: React.FC = () => {
                         <tbody>
                             {families.map(fam => (
                                 <tr key={fam.id} className="border-b border-base-300 hover:bg-base-300/50">
-                                    {/* Perbaikan: gunakan fam.spouse1_id dan fam.spouse2_id */}
-                                    <td className="p-3 font-medium">{getSpouseName(fam.spouse1_id)}</td>
-                                    <td className="p-3 font-medium">{getSpouseName(fam.spouse2_id)}</td>
-                                    {/* Perbaikan: gunakan fam.children_ids dan tambahkan null check dengan opsional chaining */}
-                                    <td className="p-3 hidden md:table-cell">{fam.children_ids?.length ?? 0}</td>
+                                    <td className="p-3 font-medium">{getSpouseName(fam.spouse1Id)}</td>
+                                    <td className="p-3 font-medium">{getSpouseName(fam.spouse2Id)}</td>
+                                    <td className="p-3 hidden md:table-cell">{fam.childrenIds.length}</td>
                                     <td className="p-3 flex items-center space-x-2">
                                         <button onClick={() => openFamilyModal(fam)} className="p-2 text-blue-400 hover:text-blue-300"><EditIcon/></button>
                                         <button onClick={() => handleDeleteFamily(fam.id)} className="p-2 text-error hover:text-red-400"><DeleteIcon/></button>
@@ -151,13 +134,13 @@ export const AdminPage: React.FC = () => {
             </div>
 
             <Modal isOpen={isIndividualModalOpen} onClose={() => setIndividualModalOpen(false)} title={editingIndividual ? 'Edit Individu' : 'Tambah Individu Baru'}>
-                <AdminIndividualForm
-                    onSave={handleSaveIndividual}
-                    onClose={() => setIndividualModalOpen(false)}
+                <AdminIndividualForm 
+                    onSave={handleSaveIndividual} 
+                    onClose={() => setIndividualModalOpen(false)} 
                     initialData={editingIndividual}
                 />
             </Modal>
-
+            
             <Modal isOpen={isFamilyModalOpen} onClose={() => setFamilyModalOpen(false)} title={editingFamily ? 'Edit Keluarga' : 'Tambah Keluarga Baru'}>
                 <AdminFamilyForm
                     onSave={handleSaveFamily}

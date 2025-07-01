@@ -1,71 +1,33 @@
-// Silsilah_1/src/components/AdminFamilyForm.tsx
 import React, { useState, useEffect } from 'react';
+import { Family, Individual, LifeEvent } from '../types';
 import { useFamily } from '../hooks/useFamilyData';
-import { Tables } from '../types/supabase'; // Import tipe dari supabase.ts
-
-interface FormFamily {
-  id?: string;
-  spouse1Id: string | null;
-  spouse2Id: string | null;
-  childrenIds: string[] | null;
-  marriage: { date: string | null; place: string | null; };
-  divorce: { date: string | null; place: string | null; };
-}
-
-type SupabaseFamilyInsert = Tables<'families'>['Insert'];
-type SupabaseFamilyUpdate = Tables<'families'>['Update'];
 
 interface AdminFamilyFormProps {
-  onSave: (family: SupabaseFamilyInsert | SupabaseFamilyUpdate) => void;
+  onSave: (family: any) => void;
   onClose: () => void;
-  initialData?: Tables<'families'>['Row'] | null;
+  initialData?: Family | null;
 }
 
-const emptyFamilyForm: FormFamily = {
-  spouse1Id: null, spouse2Id: null, childrenIds: [],
-  marriage: { date: null, place: null}, divorce: { date: null, place: null}
-};
-
-const convertSupabaseFamilyToForm = (supabaseData: Tables<'families'>['Row']): FormFamily => {
-  return {
-    id: supabaseData.id, spouse1Id: supabaseData.spouse1_id, spouse2Id: supabaseData.spouse2_id,
-    childrenIds: supabaseData.children_ids,
-    marriage: { date: supabaseData.marriage_date, place: supabaseData.marriage_place },
-    divorce: { date: supabaseData.divorce_date, place: supabaseData.divorce_place }
-  };
-};
-
-const convertFormFamilyToSupabase = (formData: FormFamily): SupabaseFamilyInsert | SupabaseFamilyUpdate => {
-  const supabaseData: SupabaseFamilyInsert | SupabaseFamilyUpdate = {
-    spouse1_id: formData.spouse1Id === '' ? null : formData.spouse1Id,
-    spouse2_id: formData.spouse2Id === '' ? null : formData.spouse2Id,
-    children_ids: formData.childrenIds && formData.childrenIds.length > 0 ? formData.childrenIds : null,
-    marriage_date: formData.marriage?.date === '' ? null : formData.marriage?.date,
-    marriage_place: formData.marriage?.place === '' ? null : formData.marriage?.place,
-    divorce_date: formData.divorce?.date === '' ? null : formData.divorce?.date,
-    divorce_place: formData.divorce?.place === '' ? null : formData.divorce?.place,
-  };
-
-  if ('id' in formData && formData.id) {
-    (supabaseData as SupabaseFamilyUpdate).id = formData.id;
-  }
-  return supabaseData;
+const emptyFamily: Omit<Family, 'id'> = {
+  spouse1Id: '',
+  spouse2Id: '',
+  childrenIds: [],
+  marriage: { date: '', place: ''},
+  divorce: { date: '', place: ''}
 };
 
 export const AdminFamilyForm: React.FC<AdminFamilyFormProps> = ({ onSave, onClose, initialData }) => {
-  const [formData, setFormData] = useState<FormFamily>(
-    initialData ? convertSupabaseFamilyToForm(initialData) : emptyFamilyForm
-  );
+  const [formData, setFormData] = useState<Omit<Family, 'id'> | Family>(initialData || emptyFamily);
   const { data: familyData } = useFamily();
   const individuals = Array.from(familyData.individuals.values());
 
   useEffect(() => {
-    setFormData(initialData ? convertSupabaseFamilyToForm(initialData) : emptyFamilyForm);
+    setFormData(initialData || emptyFamily);
   }, [initialData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value === '' ? null : value }));
+    setFormData(prev => ({ ...prev, [name]: value || undefined }));
   };
 
   const handleChildrenChange = (childId: string) => {
@@ -77,24 +39,21 @@ export const AdminFamilyForm: React.FC<AdminFamilyFormProps> = ({ onSave, onClos
           return { ...prev, childrenIds: newChildren };
       });
   };
-
+  
   const handleEventChange = (e: React.ChangeEvent<HTMLInputElement>, eventType: 'marriage' | 'divorce', field: 'date' | 'place') => {
       const { value } = e.target;
       setFormData(prev => ({
           ...prev,
           [eventType]: {
-              ...(prev[eventType] || {}),
-              [field]: value === '' ? null : value
+              ...prev[eventType],
+              [field]: value
           }
       }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("[DEBUG: AdminFamilyForm] Data form sebelum konversi:", formData); // DEBUG
-    const supabaseFormattedData = convertFormFamilyToSupabase(formData);
-    console.log("[DEBUG: AdminFamilyForm] Data form setelah konversi (siap ke Supabase):", supabaseFormattedData); // DEBUG
-    onSave(supabaseFormattedData);
+    onSave(formData);
   };
 
   return (
@@ -115,20 +74,20 @@ export const AdminFamilyForm: React.FC<AdminFamilyFormProps> = ({ onSave, onClos
                 </select>
             </div>
         </div>
-
+      
         <fieldset className="border border-base-300 p-4 rounded-md">
             <legend className="px-2 font-semibold text-gray-300">Pernikahan</legend>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <input type="text" placeholder="Tanggal" value={formData.marriage?.date || ''} onChange={e => handleEventChange(e, 'marriage', 'date')} className="w-full bg-base-100 p-2 rounded-md" />
-                <input type="text" placeholder="Tempat" value={formData.marriage?.place || ''} onChange={e => handleEventChange(e, 'marriage', 'place')} className="w-full bg-base-100 p-2 rounded-md" />
+                <input type="text" placeholder="Tanggal" value={formData.marriage?.date} onChange={e => handleEventChange(e, 'marriage', 'date')} className="w-full bg-base-100 p-2 rounded-md" />
+                <input type="text" placeholder="Tempat" value={formData.marriage?.place} onChange={e => handleEventChange(e, 'marriage', 'place')} className="w-full bg-base-100 p-2 rounded-md" />
             </div>
         </fieldset>
-
+      
         <fieldset className="border border-base-300 p-4 rounded-md">
             <legend className="px-2 font-semibold text-gray-300">Perceraian</legend>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <input type="text" placeholder="Tanggal" value={formData.divorce?.date || ''} onChange={e => handleEventChange(e, 'divorce', 'date')} className="w-full bg-base-100 p-2 rounded-md" />
-                <input type="text" placeholder="Tempat" value={formData.divorce?.place || ''} onChange={e => handleEventChange(e, 'divorce', 'place')} className="w-full bg-base-100 p-2 rounded-md" />
+                <input type="text" placeholder="Tanggal" value={formData.divorce?.date} onChange={e => handleEventChange(e, 'divorce', 'date')} className="w-full bg-base-100 p-2 rounded-md" />
+                <input type="text" placeholder="Tempat" value={formData.divorce?.place} onChange={e => handleEventChange(e, 'divorce', 'place')} className="w-full bg-base-100 p-2 rounded-md" />
             </div>
         </fieldset>
 
@@ -141,7 +100,7 @@ export const AdminFamilyForm: React.FC<AdminFamilyFormProps> = ({ onSave, onClos
                     <label key={p.id} className="flex items-center space-x-2 p-1 rounded hover:bg-base-100">
                         <input
                             type="checkbox"
-                            checked={formData.childrenIds?.includes(p.id) || false}
+                            checked={formData.childrenIds?.includes(p.id)}
                             onChange={() => handleChildrenChange(p.id)}
                             className="form-checkbox h-4 w-4 text-primary bg-gray-700 border-gray-600 rounded"
                         />
