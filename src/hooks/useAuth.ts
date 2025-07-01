@@ -1,13 +1,13 @@
 // hooks/useAuth.ts
-import { useState, useEffect, useCallback } from 'react'; // <--- PERBAIKAN SINTAKS DI SINI
-import { supabase } from '../src/supabaseClient'; 
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../supabaseClient'; // <--- PERBAIKAN PATH DI SINI
 import { User, Session } from '@supabase/supabase-js';
 
 interface UseAuthResult {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  isAdminUser: boolean; // Menunjukkan apakah pengguna adalah admin (berdasarkan email contoh)
+  isAdminUser: boolean;
   logout: () => Promise<void>;
 }
 
@@ -15,11 +15,9 @@ export const useAuth = (): UseAuthResult => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAdminUser, setIsAdminUser] = useState(false); // Default bukan admin
+  const [isAdminUser, setIsAdminUser] = useState(false);
 
   useEffect(() => {
-    let authListenerSubscription: { unsubscribe: () => void } | null = null; 
-
     const getSession = async () => {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error) {
@@ -29,34 +27,32 @@ export const useAuth = (): UseAuthResult => {
       } else {
         setSession(session);
         setUser(session?.user || null);
-        setIsAdminUser(session?.user?.email === 'admin@example.com'); 
+        // Anda mungkin ingin membuat email admin ini sebagai variabel lingkungan atau dari konfigurasi Supabase
+        setIsAdminUser(session?.user?.email === 'admin@example.com');
       }
       setLoading(false);
     };
 
     getSession();
 
-    const { data } = supabase.auth.onAuthStateChange( 
+    // Langsung assign subscription
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
         setUser(session?.user || null);
-        setIsAdminUser(session?.user?.email === 'admin@example.com'); 
+        // Anda mungkin ingin membuat email admin ini sebagai variabel lingkungan atau dari konfigurasi Supabase
+        setIsAdminUser(session?.user?.email === 'admin@example.com');
         setLoading(false);
       }
     );
 
-    if (data && typeof data.subscription?.unsubscribe === 'function') {
-        authListenerSubscription = data.subscription;
-    } else {
-        authListenerSubscription = null; 
-    }
-
+    // Pastikan subscription di-unsubscribe saat komponen di-unmount
     return () => {
-      if (authListenerSubscription && typeof authListenerSubscription.unsubscribe === 'function') {
-        authListenerSubscription.unsubscribe();
+      if (subscription) {
+        subscription.unsubscribe();
       }
     };
-  }, []); 
+  }, []); // Array dependensi kosong agar hanya berjalan sekali saat mount
 
   const logout = useCallback(async () => {
     setLoading(true);
