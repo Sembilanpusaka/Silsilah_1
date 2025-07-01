@@ -5,6 +5,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* UNTUK DEBUGGING SEMENTARA SAJA */
+.w-6 { width: 1.5rem !important; }
+.h-6 { height: 1.5rem !important; }
+.bg-base-100 { background-color: #0f172a !important; }
+.text-gray-300 { color: #d1d5db !important; }
+
 /* Custom global styles (opsional) */
 body {
   font-family: 'Inter', sans-serif; /* Ganti dengan font yang Anda inginkan */
