@@ -24,27 +24,27 @@ export const useFamilyData = () => {
   const fetchFamilyData = useCallback(async () => {
     setIsLoaded(false);
     setError(null);
-    console.log("[DEBUG: useFamilyData] Memulai fetching data keluarga dari Supabase..."); // DEBUG
+    console.log("[DEBUG: useFamilyData] Memulai fetching data keluarga dari Supabase...");
     try {
       const { data: individualsData, error: individualsError } = await supabase
         .from('individuals')
         .select('*');
 
       if (individualsError) {
-        console.error("[ERROR: useFamilyData] Error fetching individuals:", individualsError.message); // DEBUG
+        console.error("[ERROR: useFamilyData] Error fetching individuals:", individualsError.message);
         throw individualsError;
       }
-      console.log("[DEBUG: useFamilyData] Individuals fetched:", individualsData.length); // DEBUG
+      console.log("[DEBUG: useFamilyData] Individuals fetched:", individualsData.length);
 
       const { data: familiesData, error: familiesError } = await supabase
         .from('families')
         .select('*');
 
       if (familiesError) {
-        console.error("[ERROR: useFamilyData] Error fetching families:", familiesError.message); // DEBUG
+        console.error("[ERROR: useFamilyData] Error fetching families:", familiesError.message);
         throw familiesError;
       }
-      console.log("[DEBUG: useFamilyData] Families fetched:", familiesData.length); // DEBUG
+      console.log("[DEBUG: useFamilyData] Families fetched:", familiesData.length);
 
       const individualsMap = new Map<string, SupabaseIndividual>();
       individualsData.forEach(ind => individualsMap.set(ind.id, ind));
@@ -59,28 +59,27 @@ export const useFamilyData = () => {
         families: familiesMap,
         rootIndividualId: rootId,
       });
-      console.log("[DEBUG: useFamilyData] Data keluarga berhasil diatur."); // DEBUG
+      console.log("[DEBUG: useFamilyData] Data keluarga berhasil diatur.");
     } catch (err: any) {
-      console.error("[ERROR: useFamilyData] Gagal memuat data keluarga dari Supabase:", err.message); // DEBUG
+      console.error("[ERROR: useFamilyData] Gagal memuat data keluarga dari Supabase:", err.message);
       setError(err.message);
     } finally {
       setIsLoaded(true);
-      console.log("[DEBUG: useFamilyData] Loading data keluarga selesai."); // DEBUG
+      console.log("[DEBUG: useFamilyData] Loading data keluarga selesai.");
     }
   }, []);
 
   useEffect(() => {
     fetchFamilyData();
 
-    // Pastikan Realtime Subscription diatur dengan benar dan diaktifkan di Supabase Dashboard
     const individualsChannel = supabase
       .channel('public:individuals')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'individuals' },
         (payload) => {
-          console.log('[DEBUG: Realtime] Perubahan individu diterima:', payload); // DEBUG
-          fetchFamilyData(); // Re-fetch data untuk memperbarui state
+          console.log('[DEBUG: Realtime] Perubahan individu diterima:', payload);
+          fetchFamilyData();
         }
       )
       .subscribe();
@@ -91,8 +90,8 @@ export const useFamilyData = () => {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'families' },
         (payload) => {
-          console.log('[DEBUG: Realtime] Perubahan keluarga diterima:', payload); // DEBUG
-          fetchFamilyData(); // Re-fetch data untuk memperbarui state
+          console.log('[DEBUG: Realtime] Perubahan keluarga diterima:', payload);
+          fetchFamilyData();
         }
       )
       .subscribe();
@@ -100,25 +99,23 @@ export const useFamilyData = () => {
     return () => {
       supabase.removeChannel(individualsChannel);
       supabase.removeChannel(familiesChannel);
-      console.log('[DEBUG: Realtime] Channel Realtime dibersihkan.'); // DEBUG
+      console.log('[DEBUG: Realtime] Channel Realtime dibersihkan.');
     };
   }, [fetchFamilyData]);
 
-  // --- Fungsi CRUD untuk Supabase ---
-
   const updateIndividual = useCallback(async (individual: SupabaseIndividualUpdate) => {
-    console.log("[DEBUG: updateIndividual] Data akan dikirim ke Supabase:", individual); // DEBUG
+    console.log("[DEBUG: updateIndividual] Data akan dikirim ke Supabase:", individual);
     try {
       const { error: supabaseError } = await supabase
         .from('individuals')
         .update(individual)
         .eq('id', individual.id!);
       if (supabaseError) {
-        console.error("[ERROR: updateIndividual] Error dari Supabase:", supabaseError); // DEBUG
+        console.error("[ERROR: updateIndividual] Error dari Supabase:", supabaseError);
         throw supabaseError;
       }
-      console.log("[DEBUG: updateIndividual] Data individu berhasil diperbarui di Supabase."); // DEBUG
-      await fetchFamilyData(); // Refresh data setelah update
+      console.log("[DEBUG: updateIndividual] Data individu berhasil diperbarui di Supabase.");
+      await fetchFamilyData();
     } catch (err: any) {
       console.error("[ERROR: updateIndividual] Gagal memperbarui individu:", err.message);
       setError(err.message);
@@ -126,9 +123,8 @@ export const useFamilyData = () => {
   }, [fetchFamilyData]);
 
   const addIndividual = useCallback(async (individual: SupabaseIndividualInsert) => {
-    console.log("[DEBUG: addIndividual] Data akan dikirim ke Supabase:", individual); // DEBUG
+    console.log("[DEBUG: addIndividual] Data akan dikirim ke Supabase:", individual);
     try {
-      // Hapus ID jika kosong atau Supabase yang akan generate UUID
       const dataToSend = { ...individual };
       if ('id' in dataToSend && (dataToSend.id === "" || dataToSend.id === undefined)) {
         delete (dataToSend as any).id;
@@ -139,11 +135,11 @@ export const useFamilyData = () => {
         .select();
 
       if (supabaseError) {
-        console.error("[DEBUG: addIndividual] Error dari Supabase:", supabaseError); // DEBUG
+        console.error("[DEBUG: addIndividual] Error dari Supabase:", supabaseError);
         throw supabaseError;
       }
-      console.log("[DEBUG: addIndividual] Data individu berhasil ditambahkan ke Supabase:", newRow); // DEBUG
-      await fetchFamilyData(); // Refresh data setelah insert
+      console.log("[DEBUG: addIndividual] Data individu berhasil ditambahkan ke Supabase:", newRow);
+      await fetchFamilyData();
     } catch (err: any) {
       console.error("[ERROR: addIndividual] Gagal menambahkan individu:", err.message);
       setError(err.message);
@@ -151,17 +147,17 @@ export const useFamilyData = () => {
   }, [fetchFamilyData]);
 
   const deleteIndividual = useCallback(async (id: string) => {
-    console.log("[DEBUG: deleteIndividual] ID akan dihapus dari Supabase:", id); // DEBUG
+    console.log("[DEBUG: deleteIndividual] ID akan dihapus dari Supabase:", id);
     try {
       const { error: supabaseError } = await supabase
         .from('individuals')
         .delete()
         .eq('id', id);
       if (supabaseError) {
-        console.error("[DEBUG: deleteIndividual] Error dari Supabase:", supabaseError); // DEBUG
+        console.error("[DEBUG: deleteIndividual] Error dari Supabase:", supabaseError);
         throw supabaseError;
       }
-      console.log("[DEBUG: deleteIndividual] Individu berhasil dihapus dari Supabase."); // DEBUG
+      console.log("[DEBUG: deleteIndividual] Individu berhasil dihapus dari Supabase.");
       await fetchFamilyData();
     } catch (err: any) {
       console.error("[ERROR: deleteIndividual] Gagal menghapus individu:", err.message);
@@ -170,17 +166,17 @@ export const useFamilyData = () => {
   }, [fetchFamilyData]);
 
   const updateFamily = useCallback(async (family: SupabaseFamilyUpdate) => {
-    console.log("[DEBUG: updateFamily] Data akan dikirim ke Supabase:", family); // DEBUG
+    console.log("[DEBUG: updateFamily] Data akan dikirim ke Supabase:", family);
     try {
       const { error: supabaseError } = await supabase
         .from('families')
         .update(family)
         .eq('id', family.id!);
       if (supabaseError) {
-        console.error("[DEBUG: updateFamily] Error dari Supabase:", supabaseError); // DEBUG
+        console.error("[DEBUG: updateFamily] Error dari Supabase:", supabaseError);
         throw supabaseError;
       }
-      console.log("[DEBUG: updateFamily] Data keluarga berhasil diperbarui di Supabase."); // DEBUG
+      console.log("[DEBUG: updateFamily] Data keluarga berhasil diperbarui di Supabase.");
       await fetchFamilyData();
     } catch (err: any) {
       console.error("[ERROR: updateFamily] Gagal memperbarui keluarga:", err.message);
@@ -189,7 +185,7 @@ export const useFamilyData = () => {
   }, [fetchFamilyData]);
 
   const addFamily = useCallback(async (family: SupabaseFamilyInsert) => {
-    console.log("[DEBUG: addFamily] Data akan dikirim ke Supabase:", family); // DEBUG
+    console.log("[DEBUG: addFamily] Data akan dikirim ke Supabase:", family);
     try {
       const dataToSend = { ...family };
       if ('id' in dataToSend && (dataToSend.id === "" || dataToSend.id === undefined)) {
@@ -201,10 +197,10 @@ export const useFamilyData = () => {
         .select();
 
       if (supabaseError) {
-        console.error("[DEBUG: addFamily] Error dari Supabase:", supabaseError); // DEBUG
+        console.error("[DEBUG: addFamily] Error dari Supabase:", supabaseError);
         throw supabaseError;
       }
-      console.log("[DEBUG: addFamily] Data keluarga berhasil ditambahkan ke Supabase:", newRow); // DEBUG
+      console.log("[DEBUG: addFamily] Data keluarga berhasil ditambahkan ke Supabase:", newRow);
       await fetchFamilyData();
     } catch (err: any) {
       console.error("[ERROR: addFamily] Gagal menambahkan keluarga:", err.message);
@@ -213,17 +209,17 @@ export const useFamilyData = () => {
   }, [fetchFamilyData]);
 
   const deleteFamily = useCallback(async (id: string) => {
-    console.log("[DEBUG: deleteFamily] ID akan dihapus dari Supabase:", id); // DEBUG
+    console.log("[DEBUG: deleteFamily] ID akan dihapus dari Supabase:", id);
     try {
       const { error: supabaseError } = await supabase
         .from('families')
         .delete()
         .eq('id', id);
       if (supabaseError) {
-        console.error("[DEBUG: deleteFamily] Error dari Supabase:", supabaseError); // DEBUG
+        console.error("[DEBUG: deleteFamily] Error dari Supabase:", supabaseError);
         throw supabaseError;
       }
-      console.log("[DEBUG: deleteFamily] Keluarga berhasil dihapus dari Supabase."); // DEBUG
+      console.log("[DEBUG: deleteFamily] Keluarga berhasil dihapus dari Supabase.");
       await fetchFamilyData();
     } catch (err: any) {
       console.error("[ERROR: deleteFamily] Gagal menghapus keluarga:", err.message);
@@ -231,7 +227,6 @@ export const useFamilyData = () => {
     }
   }, [fetchFamilyData]);
 
-  // Fungsi export/import data lokal ini akan log warning karena tidak lagi didukung oleh Supabase
   const exportData = useCallback(() => { console.warn("Export data lokal tidak diimplementasikan dengan Supabase."); }, []);
   const importData = useCallback((file: File) => { console.warn("Import data lokal tidak diimplementasikan dengan Supabase."); }, []);
 
@@ -250,4 +245,14 @@ export const useFamilyData = () => {
     importData,
     setData: fetchFamilyData
   };
+};
+
+export const FamilyDataContext = React.createContext<ReturnType<typeof useFamilyData> | null>(null);
+
+export const useFamily = () => {
+    const context = React.useContext(FamilyDataContext);
+    if (!context) {
+        throw new Error('useFamily must be used within a FamilyData.Provider');
+    }
+    return context;
 };

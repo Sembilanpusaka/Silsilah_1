@@ -2,24 +2,16 @@
 import React, { useRef } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useFamily } from '../hooks/useFamilyData'; // Tetap butuh useFamily untuk export/import
-// Tambahkan useAuth untuk login/logout
-import { useAuth } from '../hooks/useAuth'; // <--- Tambahkan ini
+import { useAuth } from '../hooks/useAuth';
 import { TreeIcon, UserIcon, DownloadIcon, UploadIcon, LoginIcon, LogoutIcon, RelationshipIcon, AdminIcon, GuestbookIcon } from './Icons';
 
 interface HeaderProps {
-    // isAdmin dan onLogout kini bisa langsung diambil dari useAuth di App.tsx dan diteruskan
-    // atau jika App.tsx sudah menggunakan useAuth, Anda bisa melewati props ini
-    // kita akan ubah App.tsx agar Header bisa menerima isAdmin & onLogout dari useAuth
-    // Untuk saat ini, asumsikan prop masih diterima dari App.tsx
     isAdmin: boolean;
     onLoginClick: () => void;
-    onLogout: () => void; // Prop onLogout sekarang akan berasal dari useAuth
+    onLogout: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ isAdmin, onLoginClick, onLogout }) => {
-    // Note: exportData dan importData dari useFamilyData sekarang hanya log warning
-    // karena fungsionalitas lokalnya sudah dihapus. Jika ingin mengimplementasikannya
-    // dengan Supabase Storage atau cara lain, perlu perubahan di useFamilyData.
     const { exportData, importData } = useFamily();
     const fileInputRef = useRef<HTMLInputElement>(null);
 

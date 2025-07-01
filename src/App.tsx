@@ -1,4 +1,3 @@
-// Silsilah_1/src/App.tsx
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useFamilyData, FamilyDataContext } from './hooks/useFamilyData';
@@ -16,7 +15,8 @@ import { GuestbookPage } from './components/GuestbookPage';
 import { AboutPage } from './components/AboutPage';
 
 const AppContent: React.FC = () => {
-    const { isAdminUser, logout, loading: authLoading } = useAuth(); // <--- Ambil isAdminUser dan logout dari useAuth
+    // Ambil isAdminUser, logout, dan loading dari useAuth
+    const { isAdminUser, logout, loading: authLoading } = useAuth();
     const [isLoginModalOpen, setLoginModalOpen] = useState(false);
 
      useEffect(() => {
@@ -24,8 +24,8 @@ const AppContent: React.FC = () => {
     }, []);
 
     const handleLoginSuccess = () => {
-        // useAuth akan secara otomatis memperbarui isAdminUser setelah login Supabase sukses
-        // Jadi, tidak perlu set isAdmin di sini, cukup tutup modal
+        // useAuth akan secara otomatis memperbarui isAdminUser setelah login Supabase sukses.
+        // Jadi, tidak perlu set isAdmin di sini, cukup tutup modal.
         setLoginModalOpen(false);
     };
 
@@ -33,7 +33,7 @@ const AppContent: React.FC = () => {
         logout(); // Panggil fungsi logout dari useAuth
     }
 
-    // Jika autentikasi masih loading, tampilkan loading state
+    // Jika autentikasi masih loading (misal saat inisialisasi sesi), tampilkan loading state
     if (authLoading) {
       return (
         <div className="flex items-center justify-center h-screen bg-base-100">
@@ -45,9 +45,9 @@ const AppContent: React.FC = () => {
     return (
         <div className="min-h-screen flex flex-col bg-base-100">
             <Header
-                isAdmin={isAdminUser} // <--- Gunakan isAdminUser dari useAuth
+                isAdmin={isAdminUser} // Gunakan isAdminUser dari useAuth
                 onLoginClick={() => setLoginModalOpen(true)}
-                onLogout={handleLogout} // <--- Gunakan handleLogout dari sini
+                onLogout={handleLogout} // Gunakan handleLogout dari sini
             />
             <main className="flex-grow">
                 <Routes>
@@ -59,7 +59,7 @@ const AppContent: React.FC = () => {
                     <Route path="/about" element={<AboutPage />} />
                     <Route
                         path="/admin"
-                        // <--- Gunakan isAdminUser dari useAuth untuk mengontrol akses admin
+                        // Gunakan isAdminUser dari useAuth untuk mengontrol akses admin
                         element={isAdminUser ? <AdminPage /> : <Navigate to="/" />}
                     />
                 </Routes>
@@ -73,6 +73,7 @@ const AppContent: React.FC = () => {
         </div>
     );
 }
+
 
 const App: React.FC = () => {
     const familyData = useFamilyData();
@@ -89,7 +90,8 @@ const App: React.FC = () => {
     return (
         <FamilyDataContext.Provider value={familyData}>
             <GuestbookContext.Provider value={guestbookData}>
-                <AppContent /> {/* AppContent sekarang menggunakan useAuth */}
+                {/* AppContent sekarang menggunakan useAuth secara internal */}
+                <AppContent />
             </GuestbookContext.Provider>
         </FamilyDataContext.Provider>
     );
