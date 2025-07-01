@@ -1,7 +1,6 @@
-// Silsilah_1/src/components/Header.tsx
 import React, { useRef } from 'react';
 import { NavLink } from 'react-router-dom';
-import { useFamily } from '../hooks/useFamilyData'; // Tetap butuh useFamily untuk export/import
+import { useFamily } from '../hooks/useFamilyData';
 import { useAuth } from '../hooks/useAuth';
 import { TreeIcon, UserIcon, DownloadIcon, UploadIcon, LoginIcon, LogoutIcon, RelationshipIcon, AdminIcon, GuestbookIcon } from './Icons';
 
@@ -32,13 +31,16 @@ export const Header: React.FC<HeaderProps> = ({ isAdmin, onLoginClick, onLogout 
 
     return (
         <header className="bg-base-200 shadow-lg sticky top-0 z-50">
+            {/* Container utama header: flex dan justify-between untuk spasi antar grup */}
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
+                    {/* Grup kiri: logo dan navigasi utama */}
                     <div className="flex items-center space-x-4">
                         <NavLink to="/" className="flex items-center space-x-2 text-xl font-bold text-white">
                              <TreeIcon className="w-8 h-8 text-accent"/>
                              <span>Silsilah</span>
                         </NavLink>
+                        {/* Navigasi desktop: flex dan space-x untuk spasi antar link */}
                         <nav className="hidden md:flex items-center space-x-2">
                              <NavLink to="/" className={({isActive}) => `${navLinkClasses} ${isActive ? activeNavLink : inactiveNavLink}`}>
                                 <UserIcon className="w-5 h-5 mr-2"/>
@@ -64,6 +66,7 @@ export const Header: React.FC<HeaderProps> = ({ isAdmin, onLoginClick, onLogout 
                             )}
                         </nav>
                     </div>
+                    {/* Grup kanan: tombol aksi */}
                     <div className="flex items-center space-x-2">
                         <button onClick={exportData} className="p-2 rounded-full hover:bg-base-300 transition-colors" title="Export Data">
                            <DownloadIcon className="w-6 h-6 text-gray-400"/>
@@ -84,7 +87,7 @@ export const Header: React.FC<HeaderProps> = ({ isAdmin, onLoginClick, onLogout 
                         )}
                     </div>
                 </div>
-                 {/* Mobile Navigation */}
+                 {/* Navigasi mobile: flex dan justify-around */}
                 <div className="md:hidden flex justify-around py-2 border-t border-base-300">
                     <NavLink to="/" className={({isActive}) => `flex flex-col items-center ${isActive ? 'text-accent' : 'text-gray-400'}`}>
                         <UserIcon className="w-6 h-6"/>

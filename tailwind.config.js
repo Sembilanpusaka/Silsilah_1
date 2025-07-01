@@ -1,9 +1,17 @@
 /** @type {import('tailwindcss').Config} */
-export default { // Jika package.json Anda punya "type": "module", ini benar
+export default {
+  // === BAGIAN INI SANGAT KRUSIAL UNTUK MEMINDAI KELAS TAILWIND ===
   content: [
-    "./index.html",             
-    "./src/**/*.{js,ts,jsx,tsx}", // Ini mencakup semua file JS/TS/JSX/TSX di dalam src/
+    "./index.html",             // Penting untuk memindai index.html
+    // Memindai semua file JS, TS, JSX, TSX di dalam folder src/
+    // Ini harus mencakup semua komponen, halaman, dan file yang menggunakan kelas Tailwind.
+    "./src/**/*.{js,ts,jsx,tsx}",
+    // Jika Anda punya file kustom di luar src/ (misal: di root proyek) yang menggunakan Tailwind:
+    // "./*.html", // Jika ada file HTML lain di root
+    // "./*.{js,ts,jsx,tsx}", // Jika ada file JS/TS/JSX/TSX lain di root
   ],
+  // =============================================================
+
   darkMode: 'class',
   theme: {
     extend: {
