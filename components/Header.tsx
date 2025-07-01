@@ -36,7 +36,7 @@ export const Header: React.FC<HeaderProps> = ({ isAdmin, onLoginClick, onLogout 
                     <div className="flex items-center space-x-4">
                         <NavLink to="/" className="flex items-center space-x-2 text-xl font-bold text-white">
                              <TreeIcon className="w-8 h-8 text-accent"/>
-                             <span>Silsilah Bani Qomaruddin</span>
+                             <span>Silsilah</span>
                         </NavLink>
                         <nav className="hidden md:flex items-center space-x-2">
                              <NavLink to="/" className={({isActive}) => `${navLinkClasses} ${isActive ? activeNavLink : inactiveNavLink}`}>

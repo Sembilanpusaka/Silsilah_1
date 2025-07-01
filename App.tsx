@@ -1,16 +1,13 @@
-// App.tsx
+
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-// Sesuaikan path import untuk hooks dan components
 import { useFamilyData, FamilyDataContext } from './hooks/useFamilyData';
 import { useGuestbookData, GuestbookContext } from './hooks/useGuestbookData';
-import { useAuth } from './hooks/useAuth'; 
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { HomePage } from './components/HomePage';
 import { IndividualProfile } from './components/IndividualProfile';
-// PERBAIKAN: Kesalahan sintaks pada import FamilyTreeView
-import { FamilyTreeView } from './components/FamilyTreeView'; 
+import { FamilyTreeView } from './components/FamilyTreeView';
 import { LoginModal } from './components/LoginModal';
 import { InteractiveRelationshipFinder } from './components/InteractiveRelationshipFinder';
 import { AdminPage } from './components/AdminPage';
@@ -18,34 +15,26 @@ import { GuestbookPage } from './components/GuestbookPage';
 import { AboutPage } from './components/AboutPage';
 
 const AppContent: React.FC = () => {
-    const { user, loading: authLoading, isAdminUser, logout } = useAuth();
+    const [isAdmin, setIsAdmin] = useState(false);
     const [isLoginModalOpen, setLoginModalOpen] = useState(false);
 
-    useEffect(() => {
+     useEffect(() => {
         document.documentElement.classList.add('dark');
     }, []);
 
     const handleLoginSuccess = () => {
+        setIsAdmin(true);
         setLoginModalOpen(false);
     };
     
-    const handleLogout = async () => {
-        await logout();
-    }
-
-    // Auth loading guard
-    if (authLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-base-100">
-                <div className="text-xl text-white">Memuat sesi pengguna...</div>
-            </div>
-        );
+    const handleLogout = () => {
+        setIsAdmin(false);
     }
 
     return (
         <div className="min-h-screen flex flex-col bg-base-100">
             <Header 
-                isAdmin={isAdminUser} 
+                isAdmin={isAdmin} 
                 onLoginClick={() => setLoginModalOpen(true)}
                 onLogout={handleLogout}
             />
@@ -59,7 +48,7 @@ const AppContent: React.FC = () => {
                     <Route path="/about" element={<AboutPage />} />
                     <Route 
                         path="/admin" 
-                        element={isAdminUser ? <AdminPage /> : <Navigate to="/" replace />} 
+                        element={isAdmin ? <AdminPage /> : <Navigate to="/" />} 
                     />
                 </Routes>
             </main>
@@ -73,31 +62,23 @@ const AppContent: React.FC = () => {
     );
 }
 
+
 const App: React.FC = () => {
     const familyData = useFamilyData();
     const guestbookData = useGuestbookData();
 
-    // Log the familyData object before the guard
-    console.log("App.tsx: familyData from useFamilyData:", familyData);
-    console.log("App.tsx: guestbookData from useGuestbookData:", guestbookData);
-
-    if (!familyData || !guestbookData || familyData.loading || guestbookData.loading) {
-        console.log("App.tsx: Menampilkan loading screen data.");
+    if (!familyData.isLoaded || !guestbookData.isLoaded) {
         return (
             <div className="flex items-center justify-center h-screen bg-base-100">
-                <div className="text-xl text-white">Memuat Silsilah Keluarga dan Guestbook...</div>
+                <div className="text-xl text-white">Memuat Silsilah Keluarga...</div>
             </div>
         );
     }
 
-    console.log("App.tsx: Data familyData dan guestbookData selesai dimuat.");
     return (
         <FamilyDataContext.Provider value={familyData}>
             <GuestbookContext.Provider value={guestbookData}>
-                {/* Tambahkan kelas unik ini untuk pengujian */}
-                <div className="tailwind-test-class-xyz123 flex flex-col min-h-screen">
-                    <AppContent />
-                </div>
+                <AppContent />
             </GuestbookContext.Provider>
         </FamilyDataContext.Provider>
     );

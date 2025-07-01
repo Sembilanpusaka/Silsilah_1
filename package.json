@@ -9,26 +9,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.50.2",
-    "d3": "^7.9.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "react-router-dom": "^7.6.3"
+    "react-router-dom": "^7.6.3",
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
-    "@types/d3": "^7.4.3",
     "@types/node": "^22.14.0",
-    "@vitejs/plugin-react": "^4.6.0",
-    "autoprefixer": "^10.4.0",
-    "postcss": "^8.4.0",
-    "supabase": "^2.26.9",
-    "tailwindcss": "^3.0.0",
     "typescript": "~5.7.2",
-    "vite": "^6.3.5"
-  },
-  "description": "This contains everything you need to run your app locally.",
-  "main": "index.js",
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+    "vite": "^6.2.0"
+  }
 }

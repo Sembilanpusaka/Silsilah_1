@@ -1,136 +1,277 @@
-// hooks/useFamilyData.ts
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../src/supabaseClient'; 
-import { Database } from '../src/types/supabase'; 
+import { FamilyData, Individual, Family } from '../types';
+import { initialFamilyData } from '../data/initialData';
 
-export type Individual = Database['public']['Tables']['individuals']['Row'];
-export type NewIndividual = Database['public']['Tables']['individuals']['Insert'];
-export type UpdatedIndividual = Database['public']['Tables']['individuals']['Update'];
+const LOCAL_STORAGE_KEY = 'familyTreeData';
 
-export type Family = Database['public']['Tables']['families']['Row'];
-export type NewFamily = Database['public']['Tables']['families']['Insert'];
-export type UpdatedFamily = Database['public']['Tables']['families']['Update'];
+// Helper to convert Maps to JSON for storage
+const replacer = (key: string, value: any) => {
+  if(value instanceof Map) {
+    return {
+      dataType: 'Map',
+      value: Array.from(value.entries()),
+    };
+  } else {
+    return value;
+  }
+};
 
-interface UseFamilyDataResult {
-  individuals: Map<string, Individual>;
-  families: Map<string, Family>;
-  loading: boolean;
-  error: string | null;
-  updateIndividual: (individual: Individual) => Promise<void>;
-  addIndividual: (individual: Omit<NewIndividual, 'id'>) => Promise<void>;
-  deleteIndividual: (individualId: string) => Promise<void>;
-  updateFamily: (family: Family) => Promise<void>;
-  addFamily: (familyData: Omit<NewFamily, 'id'>) => Promise<void>;
-  deleteFamily: (familyId: string) => Promise<void>;
-  exportData: () => Promise<void>;
-  importData: (file: File) => Promise<void>;
-  fetchFamilyData: () => Promise<void>;
-}
-
-export const useFamilyData = (): UseFamilyDataResult => {
-  const [individuals, setIndividuals] = useState<Map<string, Individual>>(new Map());
-  const [families, setFamilies] = useState<Map<string, Family>>(new Map());
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchFamilyData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    console.log("useFamilyData: Memulai fetch data dari Supabase...");
-    try {
-      // Fetch Individuals
-      const { data: individualsData, error: individualsError } = await supabase
-        .from('individuals')
-        .select('*');
-
-      if (individualsError) {
-        console.error("useFamilyData: Error fetching individuals:", individualsError.message);
-        throw individualsError;
-      }
-      console.log("useFamilyData: individualsData fetched:", individualsData);
-
-      // Fetch Families
-      const { data: familiesData, error: familiesError } = await supabase
-        .from('families')
-        .select('*');
-
-      if (familiesError) {
-        console.error("useFamilyData: Error fetching families:", familiesError.message);
-        throw familiesError;
-      }
-      console.log("useFamilyData: familiesData fetched:", familiesData);
-
-      // Pastikan data adalah array sebelum diolah
-      const individualsMap = new Map<string, Individual>();
-      if (individualsData && Array.isArray(individualsData)) {
-        individualsData.forEach(ind => individualsMap.set(ind.id, ind));
-      } else {
-        console.warn("useFamilyData: individualsData is not an array or is null/undefined.", individualsData);
-      }
-      
-      const familiesMap = new Map<string, Family>();
-      if (familiesData && Array.isArray(familiesData)) {
-        familiesData.forEach(fam => familiesMap.set(fam.id, fam));
-      } else {
-        console.warn("useFamilyData: familiesData is not an array or is null/undefined.", familiesData);
-      }
-
-      setIndividuals(individualsMap);
-      setFamilies(familiesMap);
-      console.log("useFamilyData: Data berhasil diolah dan diatur ke state.");
-      console.log("useFamilyData: Current individuals Map size:", individualsMap.size);
-      console.log("useFamilyData: Current families Map size:", familiesMap.size);
-
-    } catch (err: any) {
-      console.error("useFamilyData: Gagal memuat data keluarga dari Supabase:", err.message);
-      setError(`Failed to load family data: ${err.message}`);
-      setIndividuals(new Map()); // Pastikan tetap Map kosong jika ada error
-      setFamilies(new Map());   // Pastikan tetap Map kosong jika ada error
-    } finally {
-      setLoading(false);
-      console.log("useFamilyData: Selesai fetch data. Loading state:", false);
+// Helper to revive Maps from JSON
+const reviver = (key: string, value: any) => {
+  if(typeof value === 'object' && value !== null) {
+    if (value.dataType === 'Map') {
+      return new Map(value.value);
     }
+  }
+  return value;
+};
+
+
+export const useFamilyData = () => {
+  const [data, setData] = useState<FamilyData>({ individuals: new Map(), families: new Map(), rootIndividualId: '' });
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    try {
+      const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (savedData) {
+        const parsedData = JSON.parse(savedData, reviver);
+        // Ensure maps are correctly revived
+        if (parsedData.individuals instanceof Map && parsedData.families instanceof Map) {
+          setData(parsedData);
+        } else {
+           setData(initialFamilyData);
+        }
+      } else {
+        setData(initialFamilyData);
+      }
+    } catch (error) {
+      console.error("Failed to load data from local storage, using initial data.", error);
+      setData(initialFamilyData);
+    }
+    setIsLoaded(true);
   }, []);
 
   useEffect(() => {
-    fetchFamilyData();
-  }, [fetchFamilyData]);
+    if (isLoaded) {
+      try {
+        const dataToSave = JSON.stringify(data, replacer);
+        localStorage.setItem(LOCAL_STORAGE_KEY, dataToSave);
+      } catch (error) {
+        console.error("Failed to save data to local storage.", error);
+      }
+    }
+  }, [data, isLoaded]);
 
-  // --- Fungsi CRUD lainnya (tidak ada perubahan kode, hanya logging di fetch) ---
-  const updateIndividual = useCallback(async (individual: Individual) => { /* ... */ }, []);
-  const addIndividual = useCallback(async (individual: Omit<NewIndividual, 'id'>) => { /* ... */ }, []);
-  const deleteIndividual = useCallback(async (individualId: string) => { /* ... */ }, []);
-  const updateFamily = useCallback(async (updatedFamily: Family) => { /* ... */ }, []);
-  const addFamily = useCallback(async (familyData: Omit<NewFamily, 'id'>) => { /* ... */ }, []);
-  const deleteFamily = useCallback(async (familyId: string) => { /* ... */ }, []);
-  const replacer = (key: string, value: any) => { /* ... */ return value; };
-  const reviver = (key: string, value: any) => { /* ... */ return value; };
-  const exportData = useCallback(async () => { /* ... */ }, [individuals, families]);
-  const importData = useCallback(async (file: File) => { /* ... */ }, [fetchFamilyData]);
+  const updateIndividual = useCallback((individual: Individual) => {
+    setData(prevData => {
+      const newIndividuals = new Map(prevData.individuals);
+      const oldIndividual = prevData.individuals.get(individual.id);
+      newIndividuals.set(individual.id, individual);
 
-  return {
-    individuals,
-    families,
-    loading,
-    error,
-    updateIndividual,
-    addIndividual,
-    deleteIndividual,
-    addFamily,
-    updateFamily,
-    deleteFamily,
-    exportData,
-    importData,
-    fetchFamilyData
-  };
+      const newFamilies = new Map(prevData.families);
+
+      // if childInFamilyId changed, update corresponding families
+      if (oldIndividual?.childInFamilyId !== individual.childInFamilyId) {
+        // remove from old family
+        if (oldIndividual?.childInFamilyId) {
+          const oldFamily = newFamilies.get(oldIndividual.childInFamilyId);
+          if (oldFamily) {
+            newFamilies.set(oldFamily.id, {
+              ...oldFamily,
+              childrenIds: oldFamily.childrenIds.filter(id => id !== individual.id)
+            });
+          }
+        }
+        // add to new family
+        if (individual.childInFamilyId) {
+          const newFamily = newFamilies.get(individual.childInFamilyId);
+          if (newFamily && !newFamily.childrenIds.includes(individual.id)) {
+             newFamilies.set(newFamily.id, {
+              ...newFamily,
+              childrenIds: [...newFamily.childrenIds, individual.id]
+            });
+          }
+        }
+      }
+
+      return { ...prevData, individuals: newIndividuals, families: newFamilies };
+    });
+  }, []);
+
+  const addIndividual = useCallback((individual: Omit<Individual, 'id'>) => {
+     setData(prevData => {
+      const newIndividuals = new Map(prevData.individuals);
+      const newId = `i${Date.now()}`;
+      const newIndividual = { ...individual, id: newId };
+      newIndividuals.set(newId, newIndividual);
+
+      const newFamilies = new Map(prevData.families);
+      if (newIndividual.childInFamilyId) {
+          const newFamily = newFamilies.get(newIndividual.childInFamilyId);
+          if (newFamily && !newFamily.childrenIds.includes(newId)) {
+             newFamilies.set(newFamily.id, {
+              ...newFamily,
+              childrenIds: [...newFamily.childrenIds, newId]
+            });
+          }
+      }
+
+      return { ...prevData, individuals: newIndividuals, families: newFamilies };
+    });
+  }, []);
+
+  const deleteIndividual = useCallback((individualId: string) => {
+    setData(prevData => {
+      const newIndividuals = new Map(prevData.individuals);
+      newIndividuals.delete(individualId);
+      
+      const newFamilies = new Map(prevData.families);
+      newFamilies.forEach((family, familyId) => {
+        let updated = false;
+        const newFamily = { ...family };
+        
+        if (newFamily.spouse1Id === individualId) { newFamily.spouse1Id = undefined; updated = true; }
+        if (newFamily.spouse2Id === individualId) { newFamily.spouse2Id = undefined; updated = true; }
+        
+        const newChildren = newFamily.childrenIds.filter(id => id !== individualId);
+        if (newChildren.length < family.childrenIds.length) {
+            newFamily.childrenIds = newChildren;
+            updated = true;
+        }
+        
+        if (updated) {
+          newFamilies.set(familyId, newFamily);
+        }
+      });
+
+      return { ...prevData, individuals: newIndividuals, families: newFamilies };
+    });
+  }, []);
+  
+  const updateFamily = useCallback((updatedFamily: Family) => {
+    setData(prevData => {
+      const newFamilies = new Map(prevData.families);
+      const newIndividuals = new Map(prevData.individuals);
+      const oldFamily = prevData.families.get(updatedFamily.id);
+
+      const addedChildrenIds = updatedFamily.childrenIds.filter(id => !oldFamily?.childrenIds.includes(id));
+      addedChildrenIds.forEach(childId => {
+          const child = newIndividuals.get(childId);
+          if (child) {
+              if (child.childInFamilyId) {
+                  const previousParentFamily = newFamilies.get(child.childInFamilyId);
+                  if (previousParentFamily) {
+                      newFamilies.set(previousParentFamily.id, { ...previousParentFamily, childrenIds: previousParentFamily.childrenIds.filter(id => id !== childId) });
+                  }
+              }
+              newIndividuals.set(childId, { ...child, childInFamilyId: updatedFamily.id });
+          }
+      });
+      
+      const removedChildrenIds = oldFamily ? oldFamily.childrenIds.filter(id => !updatedFamily.childrenIds.includes(id)) : [];
+      removedChildrenIds.forEach(childId => {
+          const child = newIndividuals.get(childId);
+          if (child && child.childInFamilyId === updatedFamily.id) {
+              newIndividuals.set(childId, { ...child, childInFamilyId: undefined });
+          }
+      });
+      
+      newFamilies.set(updatedFamily.id, updatedFamily);
+
+      return { ...prevData, families: newFamilies, individuals: newIndividuals };
+    });
+  }, []);
+
+  const addFamily = useCallback((familyData: Omit<Family, 'id'>) => {
+    setData(prevData => {
+        const newFamilies = new Map(prevData.families);
+        const newIndividuals = new Map(prevData.individuals);
+        const newId = `f${Date.now()}`;
+        const newFamily: Family = { ...familyData, id: newId };
+        
+        newFamily.childrenIds.forEach(childId => {
+            const child = newIndividuals.get(childId);
+            if (child) {
+                if(child.childInFamilyId) {
+                    const oldFamily = newFamilies.get(child.childInFamilyId);
+                    if(oldFamily) {
+                        newFamilies.set(oldFamily.id, { ...oldFamily, childrenIds: oldFamily.childrenIds.filter(id => id !== childId) });
+                    }
+                }
+                newIndividuals.set(childId, { ...child, childInFamilyId: newId });
+            }
+        });
+        
+        newFamilies.set(newId, newFamily);
+        return { ...prevData, families: newFamilies, individuals: newIndividuals };
+    });
+  }, []);
+
+  const deleteFamily = useCallback((familyId: string) => {
+    setData(prevData => {
+        const familyToDelete = prevData.families.get(familyId);
+        if (!familyToDelete) return prevData;
+        
+        const newFamilies = new Map(prevData.families);
+        newFamilies.delete(familyId);
+
+        const newIndividuals = new Map(prevData.individuals);
+        familyToDelete.childrenIds.forEach(childId => {
+            const child = newIndividuals.get(childId);
+            if (child && child.childInFamilyId === familyId) {
+                newIndividuals.set(childId, { ...child, childInFamilyId: undefined });
+            }
+        });
+
+        return { ...prevData, individuals: newIndividuals, families: newFamilies };
+    });
+  }, []);
+
+  const exportData = useCallback(() => {
+    try {
+        const dataStr = JSON.stringify(data, replacer, 2);
+        const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+        const exportFileDefaultName = 'family_tree_data.json';
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', exportFileDefaultName);
+        linkElement.click();
+    } catch(e) {
+        console.error("Error exporting data:", e);
+        alert("Could not export data.");
+    }
+  }, [data]);
+  
+  const importData = useCallback((file: File) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        try {
+            const json = event.target?.result as string;
+            if(!json) throw new Error("File is empty");
+            const parsedData = JSON.parse(json, reviver);
+             if (parsedData.individuals instanceof Map && parsedData.families instanceof Map && parsedData.rootIndividualId) {
+                setData(parsedData);
+                alert("Data imported successfully!");
+             } else {
+                throw new Error("Invalid data format.");
+             }
+        } catch (e) {
+            console.error("Error importing data:", e);
+            alert("Failed to import data. Please check the file format.");
+        }
+    };
+    reader.readAsText(file);
+  }, []);
+
+
+  return { data, isLoaded, updateIndividual, addIndividual, deleteIndividual, addFamily, updateFamily, deleteFamily, exportData, importData, setData };
 };
 
 export const FamilyDataContext = React.createContext<ReturnType<typeof useFamilyData> | null>(null);
 
 export const useFamily = () => {
     const context = React.useContext(FamilyDataContext);
-    // Tambahkan log di sini juga untuk melihat nilai konteks
-    console.log("useFamily: Context value retrieved:", context);
     if (!context) {
         throw new Error('useFamily must be used within a FamilyData.Provider');
     }

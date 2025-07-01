@@ -1,9 +1,8 @@
-// Silsilah_1/index.tsx
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { HashRouter } from 'react-router-dom';
-import App from './App'; // App.tsx ada di root proyek
-import './src/index.css'; // <-- Ini mengimpor file CSS utama Anda di src/
+import App from './App';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
