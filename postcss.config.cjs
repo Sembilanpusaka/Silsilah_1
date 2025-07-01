@@ -1,8 +1,9 @@
 // Silsilah_1/postcss.config.cjs
-// Konfigurasi untuk Tailwind CSS v2
+// Konfigurasi standar untuk Tailwind CSS v3
 module.exports = {
-  plugins: [
-    require('tailwindcss'),   // Ini adalah plugin untuk Tailwind CSS v2
-    require('autoprefixer')
-  ]
+  plugins: {
+    // INI YANG PALING PENTING: Gunakan '@tailwindcss/postcss'
+    '@tailwindcss/postcss': {},
+    autoprefixer: {},
+  }
 }

@@ -1,23 +1,31 @@
-
+// Silsilah_1/src/components/HomePage.tsx
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useFamily } from '../hooks/useFamilyData';
-import { Individual, Gender } from '../types';
+// Pastikan tipe yang diimpor dari supabase.ts
+import { Tables } from '../types/supabase';
+type Individual = Tables<'individuals'>['Row'];
+type Gender = Tables<'public'>['Enums']['gender_enum'];
+
 import { MaleIcon, FemaleIcon, SearchIcon } from './Icons';
 
 const IndividualCard: React.FC<{ individual: Individual }> = ({ individual }) => {
     return (
         <Link to={`/individual/${individual.id}`} className="block bg-base-200 rounded-lg shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
             <div className="flex items-center p-4">
-                <img className="h-20 w-20 rounded-full object-cover" src={individual.photoUrl || 'https://picsum.photos/seed/person/100/100'} alt={individual.name} />
+                {/* Perbaikan: Gunakan photo_url */}
+                <img className="h-20 w-20 rounded-full object-cover" src={individual.photo_url || 'https://picsum.photos/seed/person/100/100'} alt={individual.name || 'Unknown'} />
                 <div className="ml-4 flex-grow">
                     <div className="flex justify-between items-start">
                         <h3 className="text-lg font-bold text-white">{individual.name}</h3>
-                        {individual.gender === Gender.Male ? <MaleIcon className="w-5 h-5 text-blue-400" /> : <FemaleIcon className="w-5 h-5 text-pink-400" />}
+                        {/* Perbaikan: Gender sudah string, langsung pakai */}
+                        {individual.gender === 'male' ? <MaleIcon className="w-5 h-5 text-blue-400" /> : <FemaleIcon className="w-5 h-5 text-pink-400" />}
                     </div>
+                    {/* Perbaikan: profession adalah field datar */}
                     <p className="text-sm text-gray-400">{individual.profession || 'No profession listed'}</p>
                     <p className="text-xs text-gray-500 mt-1">
-                        {individual.birth?.date || '????'} - {individual.death?.date || '????'}
+                        {/* Perbaikan: Gunakan birth_date dan death_date */}
+                        {individual.birth_date || '????'} - {individual.death_date || '????'}
                     </p>
                 </div>
             </div>
@@ -37,8 +45,9 @@ export const HomePage: React.FC = () => {
         }
         return individuals.filter(ind =>
             ind.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            ind.birth?.date?.includes(searchTerm) ||
-            ind.birth?.place?.toLowerCase().includes(searchTerm.toLowerCase())
+            // Perbaikan: Gunakan birth_date dan birth_place
+            ind.birth_date?.includes(searchTerm) ||
+            ind.birth_place?.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [data.individuals, searchTerm]);
 

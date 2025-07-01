@@ -1,26 +1,17 @@
-// Silsilah_1/src/components/Header.tsx
+// components/Header.tsx
 import React, { useRef } from 'react';
 import { NavLink } from 'react-router-dom';
-import { useFamily } from '../hooks/useFamilyData'; // Tetap butuh useFamily untuk export/import
-// Tambahkan useAuth untuk login/logout
-import { useAuth } from '../hooks/useAuth'; // <--- Tambahkan ini
+import { useFamily } from '../hooks/useFamilyData';
 import { TreeIcon, UserIcon, DownloadIcon, UploadIcon, LoginIcon, LogoutIcon, RelationshipIcon, AdminIcon, GuestbookIcon } from './Icons';
 
 interface HeaderProps {
-    // isAdmin dan onLogout kini bisa langsung diambil dari useAuth di App.tsx dan diteruskan
-    // atau jika App.tsx sudah menggunakan useAuth, Anda bisa melewati props ini
-    // kita akan ubah App.tsx agar Header bisa menerima isAdmin & onLogout dari useAuth
-    // Untuk saat ini, asumsikan prop masih diterima dari App.tsx
     isAdmin: boolean;
     onLoginClick: () => void;
-    onLogout: () => void; // Prop onLogout sekarang akan berasal dari useAuth
+    onLogout: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ isAdmin, onLoginClick, onLogout }) => {
-    // Note: exportData dan importData dari useFamilyData sekarang hanya log warning
-    // karena fungsionalitas lokalnya sudah dihapus. Jika ingin mengimplementasikannya
-    // dengan Supabase Storage atau cara lain, perlu perubahan di useFamilyData.
-    const { exportData, importData } = useFamily();
+    const { exportData, importData } = useFamily(); // Destructuring diperbaiki
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleImportClick = () => {
@@ -45,7 +36,7 @@ export const Header: React.FC<HeaderProps> = ({ isAdmin, onLoginClick, onLogout 
                     <div className="flex items-center space-x-4">
                         <NavLink to="/" className="flex items-center space-x-2 text-xl font-bold text-white">
                              <TreeIcon className="w-8 h-8 text-accent"/>
-                             <span>Silsilah</span>
+                             <span>Silsilah Bani Qomaruddin</span>
                         </NavLink>
                         <nav className="hidden md:flex items-center space-x-2">
                              <NavLink to="/" className={({isActive}) => `${navLinkClasses} ${isActive ? activeNavLink : inactiveNavLink}`}>
@@ -80,7 +71,7 @@ export const Header: React.FC<HeaderProps> = ({ isAdmin, onLoginClick, onLogout 
                         <button onClick={handleImportClick} className="p-2 rounded-full hover:bg-base-300 transition-colors" title="Import Data">
                            <UploadIcon className="w-6 h-6 text-gray-400"/>
                         </button>
-
+                        
                         {isAdmin ? (
                             <button onClick={onLogout} className="p-2 rounded-full hover:bg-base-300 transition-colors" title="Logout">
                                 <LogoutIcon className="w-6 h-6 text-error"/>

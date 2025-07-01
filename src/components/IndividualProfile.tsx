@@ -1,34 +1,48 @@
-
+// Silsilah_1/src/components/IndividualProfile.tsx
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useFamily } from '../hooks/useFamilyData';
-import { Individual, Family, LifeEvent, Gender, DetailEntry } from '../types';
+// Pastikan tipe yang diimpor dari supabase.ts
+import { Tables } from '../types/supabase';
+// Anda mungkin masih perlu tipe DetailEntry jika didefinisikan di '../types'
+interface DetailEntry {
+    id: string; // ID lokal untuk React key
+    title: string;
+    description: string;
+    period: string;
+}
+type Individual = Tables<'individuals'>['Row'];
+type Family = Tables<'families'>['Row'];
+type Gender = Tables<'public'>['Enums']['gender_enum']; // Menggunakan enum dari supabase.ts
+
 import { MaleIcon, FemaleIcon } from './Icons';
 
-const EventCard: React.FC<{ title: string; event?: LifeEvent; detail?: string }> = ({ title, event, detail }) => {
-    if (!event?.date && !event?.place && !detail) return null;
+// --- Helper Functions and Components ---
+
+const EventCard: React.FC<{ title: string; date?: string | null; place?: string | null; detail?: string }> = ({ title, date, place, detail }) => {
+    if (!date && !place && !detail) return null;
     return (
         <div className="flex items-start space-x-4">
             <div className="flex-shrink-0 w-24 text-right">
                 <p className="text-sm font-semibold text-gray-400">{title}</p>
-                <p className="text-sm text-gray-500">{event?.date || 'Unknown date'}</p>
+                <p className="text-sm text-gray-500">{date || 'Unknown date'}</p>
             </div>
             <div className="relative flex-shrink-0">
                 <div className="h-full w-0.5 bg-base-300"></div>
-                <div className="absolute top-1/2 left-1/2 w-3 h-3 bg-accent rounded-full -translate-x-1/2 -translate-y-1/2 border-2 border-base-100"></div>
+                <div className="absolute top-1/2 left-1/2 w-3 h-3 bg-accent rounded-full -translate-x-1/2 -translate-y-1/2 border-2 border-100"></div>
             </div>
             <div className="flex-grow pb-8">
-                <p className="font-medium text-gray-300">{detail || event?.place || 'Unknown location'}</p>
+                <p className="font-medium text-gray-300">{detail || place || 'Unknown location'}</p>
             </div>
         </div>
     );
 };
 
-const FamilyMemberLink: React.FC<{ individual?: Individual, relationship?: string }> = ({ individual, relationship }) => {
+const FamilyMemberLink: React.FC<{ individual?: Individual | null, relationship?: string }> = ({ individual, relationship }) => {
     if (!individual) return null;
     return (
         <Link to={`/individual/${individual.id}`} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-base-300 transition-colors">
-            <img src={individual.photoUrl || 'https://picsum.photos/seed/person/50/50'} alt={individual.name} className="w-10 h-10 rounded-full object-cover" />
+            <img src={individual.photo_url || 'https://picsum.photos/seed/person/50/50'} alt={individual.name || 'Unknown'} className="w-10 h-10 rounded-full object-cover" />
             <div>
                 <p className="font-semibold text-white">{individual.name}</p>
                 {relationship && <p className="text-sm text-gray-400">{relationship}</p>}
@@ -37,28 +51,33 @@ const FamilyMemberLink: React.FC<{ individual?: Individual, relationship?: strin
     );
 };
 
-const DescendantTree: React.FC<{ descendants: any[] }> = ({ descendants }) => {
+// Pastikan tipe descendants sesuai dengan Individual atau struktur yang Anda inginkan
+const DescendantTree: React.FC<{ descendants: (Individual & { children?: any[] })[] }> = ({ descendants }) => {
     if (descendants.length === 0) return null;
     return (
         <ul className="pl-6 border-l border-base-300 space-y-2">
             {descendants.map(desc => (
                 <li key={desc.id}>
                     <FamilyMemberLink individual={desc} relationship="Keturunan" />
-                    <DescendantTree descendants={desc.children} />
+                    {desc.children && <DescendantTree descendants={desc.children} />}
                 </li>
             ))}
         </ul>
     );
 };
 
-const DetailSection: React.FC<{title: string, items?: DetailEntry[]}> = ({ title, items}) => {
-    if (!items || items.length === 0) return null;
+const DetailSection: React.FC<{title: string, items?: DetailEntry[] | null}> = ({ title, items}) => {
+    if (!items || items.length === 0) return null; // Pastikan items adalah array dan tidak kosong
+
+    // Karena items dari DB adalah Json, perlu di-parse jika belum
+    const parsedItems = items as DetailEntry[]; // Asumsi sudah diconvert di useFamilyData atau di tempat lain
+
     return (
         <div className="mb-8">
             <h3 className="text-xl font-bold text-white mb-4 border-b border-base-300 pb-2">{title}</h3>
             <ul className="space-y-4">
-                {items.map(item => (
-                    <li key={item.id} className="bg-base-100/50 p-4 rounded-lg">
+                {parsedItems.map((item, index) => ( // Tambahkan index sebagai key cadangan jika id tidak selalu unik
+                    <li key={item.id || `item-${index}`} className="bg-base-100/50 p-4 rounded-lg">
                         <p className="font-semibold text-accent">{item.title} {item.period && <span className="text-gray-400 font-normal text-sm">({item.period})</span>}</p>
                         <p className="text-gray-300 whitespace-pre-wrap">{item.description}</p>
                     </li>
@@ -67,6 +86,8 @@ const DetailSection: React.FC<{title: string, items?: DetailEntry[]}> = ({ title
         </div>
     )
 }
+
+// --- Komponen Utama IndividualProfile ---
 
 export const IndividualProfile: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -79,32 +100,34 @@ export const IndividualProfile: React.FC = () => {
 
     const individual = data.individuals.get(id)!;
 
-    const parentFamily = individual.childInFamilyId ? data.families.get(individual.childInFamilyId) : undefined;
+    // Perbaikan: Gunakan properti snake_case dari Supabase
+    const parentFamily = individual.child_in_family_id ? data.families.get(individual.child_in_family_id) : undefined;
     const parents = {
-        father: parentFamily?.spouse1Id ? data.individuals.get(parentFamily.spouse1Id) : undefined,
-        mother: parentFamily?.spouse2Id ? data.individuals.get(parentFamily.spouse2Id) : undefined,
+        father: parentFamily?.spouse1_id ? data.individuals.get(parentFamily.spouse1_id) : undefined,
+        mother: parentFamily?.spouse2_id ? data.individuals.get(parentFamily.spouse2_id) : undefined,
     };
 
-    const spouseFamilies = Array.from(data.families.values()).filter(f => f.spouse1Id === id || f.spouse2Id === id);
+    const spouseFamilies = Array.from(data.families.values()).filter(f => f.spouse1_id === id || f.spouse2_id === id);
 
-    const getDescendants = (personId: string): any[] => {
-        const descendantsList: any[] = [];
-        const familiesAsSpouse = Array.from(data.families.values()).filter(f => f.spouse1Id === personId || f.spouse2Id === personId);
-        
+    const getDescendants = (personId: string): (Individual & { children?: any[] })[] => {
+        const descendantsList: (Individual & { children?: any[] })[] = [];
+        const familiesAsSpouse = Array.from(data.families.values()).filter(f => f.spouse1_id === personId || f.spouse2_id === personId);
+
         for (const family of familiesAsSpouse) {
-            for (const childId of family.childrenIds) {
+            // Perbaikan: Gunakan family.children_ids dan tambahkan null check
+            for (const childId of family.children_ids || []) {
                 const child = data.individuals.get(childId);
                 if (child) {
                     descendantsList.push({
                         ...child,
-                        children: getDescendants(childId)
+                        children: getDescendants(child.id)
                     });
                 }
             }
         }
         return descendantsList;
     };
-    
+
     const descendants = getDescendants(individual.id);
 
     const TabButton: React.FC<{tabName: string; label: string}> = ({tabName, label}) => (
@@ -121,13 +144,16 @@ export const IndividualProfile: React.FC = () => {
             <div className="bg-base-200 shadow-xl rounded-lg overflow-hidden">
                 <div className="md:flex bg-base-300/30 p-8">
                     <div className="md:flex-shrink-0">
-                        <img className="h-48 w-48 rounded-full object-cover mx-auto ring-4 ring-primary" src={individual.photoUrl || 'https://picsum.photos/seed/person/200/200'} alt={individual.name} />
+                        {/* Perbaikan: Gunakan photo_url */}
+                        <img className="h-48 w-48 rounded-full object-cover mx-auto ring-4 ring-primary" src={individual.photo_url || 'https://picsum.photos/seed/person/200/200'} alt={individual.name || 'Unknown'} />
                         <div className="flex items-center justify-center mt-4 space-x-2 text-gray-400">
-                             {individual.gender === Gender.Male ? <MaleIcon className="w-6 h-6 text-blue-400" /> : <FemaleIcon className="w-6 h-6 text-pink-400" />}
+                             {/* Perbaikan: Gender sudah string, langsung pakai */}
+                             {individual.gender === 'male' ? <MaleIcon className="w-6 h-6 text-blue-400" /> : <FemaleIcon className="w-6 h-6 text-pink-400" />}
                             <span>{individual.gender}</span>
                         </div>
                     </div>
                     <div className="p-8 w-full">
+                        {/* Perbaikan: profession adalah field datar */}
                         <div className="uppercase tracking-wide text-sm text-accent font-semibold">{individual.profession || 'Informasi Pribadi'}</div>
                         <h1 className="block mt-1 text-4xl leading-tight font-bold text-white">{individual.name}</h1>
                         <p className="mt-4 text-gray-300">{individual.description || 'Tidak ada deskripsi yang tersedia.'}</p>
@@ -148,12 +174,16 @@ export const IndividualProfile: React.FC = () => {
                         <div>
                             <h2 className="text-2xl font-bold text-white mb-6">Fakta dan Peristiwa</h2>
                             <div className="relative">
-                                <EventCard title="Lahir" event={individual.birth} />
+                                {/* Perbaikan: Gunakan birth_date dan birth_place */}
+                                <EventCard title="Lahir" date={individual.birth_date} place={individual.birth_place} />
                                 {spouseFamilies.map(family => {
-                                    const spouse = data.individuals.get(family.spouse1Id === id ? family.spouse2Id! : family.spouse1Id!);
-                                    return family.marriage && <EventCard key={`m-${family.id}`} title="Menikah" event={family.marriage} detail={`dengan ${spouse?.name || 'Tidak Dikenal'}`} />
+                                    // Perbaikan: Gunakan spouse1_id dan spouse2_id
+                                    const spouse = data.individuals.get(family.spouse1_id === id ? family.spouse2_id! : family.spouse1_id!);
+                                    // Perbaikan: Gunakan marriage_date dan marriage_place
+                                    return family.marriage_date && <EventCard key={`m-${family.id}`} title="Menikah" date={family.marriage_date} place={family.marriage_place} detail={`dengan ${spouse?.name || 'Tidak Dikenal'}`} />
                                 })}
-                                <EventCard title="Meninggal" event={individual.death} />
+                                {/* Perbaikan: Gunakan death_date dan death_place */}
+                                <EventCard title="Meninggal" date={individual.death_date} place={individual.death_place} />
                             </div>
                              {individual.notes && (
                                 <div className="mt-8">
@@ -176,8 +206,10 @@ export const IndividualProfile: React.FC = () => {
                                 </div>
                                 <div>
                                     {spouseFamilies.map((family, index) => {
-                                        const spouse = data.individuals.get(family.spouse1Id === id ? family.spouse2Id! : family.spouse1Id!)
-                                        const children = family.childrenIds.map(cid => data.individuals.get(cid));
+                                        // Perbaikan: Gunakan spouse1_id dan spouse2_id
+                                        const spouse = data.individuals.get(family.spouse1_id === id ? family.spouse2_id! : family.spouse1_id!)
+                                        // Perbaikan: Gunakan family.children_ids dan pastikan tidak null sebelum map
+                                        const children = (family.children_ids || []).map(cid => data.individuals.get(cid));
                                         return (
                                             <div key={family.id} className="mb-6">
                                                 <h3 className="font-semibold text-gray-400 mb-2 border-b border-base-300 pb-2">
@@ -191,7 +223,8 @@ export const IndividualProfile: React.FC = () => {
                                                     <>
                                                         <h4 className="font-semibold text-gray-500 mt-4 mb-2">Anak-anak</h4>
                                                         <div className="space-y-2 pl-4">
-                                                            {children.map(child => (
+                                                            {/* Filter out undefined children if any mapping failed */}
+                                                            {children.filter(Boolean).map(child => (
                                                                 <FamilyMemberLink key={child!.id} individual={child} />
                                                             ))}
                                                         </div>
@@ -216,10 +249,11 @@ export const IndividualProfile: React.FC = () => {
                     )}
                      {activeTab === 'details' && (
                         <div>
-                            <DetailSection title="Pendidikan" items={individual.education} />
-                            <DetailSection title="Karya" items={individual.works} />
-                            <DetailSection title="Sumber Data" items={individual.sources} />
-                            <DetailSection title="Referensi" items={individual.references} />
+                            {/* Perbaikan: Gunakan nama kolom Supabase untuk JSONB columns */}
+                            <DetailSection title="Pendidikan" items={individual.education as DetailEntry[] | null} />
+                            <DetailSection title="Karya" items={individual.works as DetailEntry[] | null} />
+                            <DetailSection title="Sumber Data" items={individual.sources as DetailEntry[] | null} />
+                            <DetailSection title="Referensi" items={individual.related_references as DetailEntry[] | null} /> {/* Perhatikan 'related_references' */}
                         </div>
                     )}
                 </div>

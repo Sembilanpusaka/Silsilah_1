@@ -1,6 +1,6 @@
 // hooks/useAuth.ts
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../supabaseClient'; // <--- PERBAIKAN PATH DI SINI
+import { supabase } from '../supabaseClient';
 import { User, Session } from '@supabase/supabase-js';
 
 interface UseAuthResult {
@@ -8,6 +8,7 @@ interface UseAuthResult {
   session: Session | null;
   loading: boolean;
   isAdminUser: boolean;
+  login: (email: string, password: string) => Promise<{ user: User | null; session: Session | null; error: Error | null; }>;
   logout: () => Promise<void>;
 }
 
@@ -27,7 +28,7 @@ export const useAuth = (): UseAuthResult => {
       } else {
         setSession(session);
         setUser(session?.user || null);
-        // Anda mungkin ingin membuat email admin ini sebagai variabel lingkungan atau dari konfigurasi Supabase
+        // Pastikan email ini adalah email ADMIN yang terdaftar di Supabase Auth
         setIsAdminUser(session?.user?.email === 'admin@example.com');
       }
       setLoading(false);
@@ -35,24 +36,33 @@ export const useAuth = (): UseAuthResult => {
 
     getSession();
 
-    // Langsung assign subscription
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
         setUser(session?.user || null);
-        // Anda mungkin ingin membuat email admin ini sebagai variabel lingkungan atau dari konfigurasi Supabase
+        // Pastikan email ini adalah email ADMIN yang terdaftar di Supabase Auth
         setIsAdminUser(session?.user?.email === 'admin@example.com');
         setLoading(false);
       }
     );
 
-    // Pastikan subscription di-unsubscribe saat komponen di-unmount
     return () => {
       if (subscription) {
         subscription.unsubscribe();
       }
     };
-  }, []); // Array dependensi kosong agar hanya berjalan sekali saat mount
+  }, []);
+
+  const login = useCallback(async (email: string, password: string) => {
+    setLoading(true);
+    // Ini adalah panggilan langsung ke API Supabase Auth
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email,
+      password: password,
+    });
+    setLoading(false);
+    return { user: data.user, session: data.session, error };
+  }, []);
 
   const logout = useCallback(async () => {
     setLoading(true);
@@ -70,5 +80,5 @@ export const useAuth = (): UseAuthResult => {
     }
   }, []);
 
-  return { user, session, loading, isAdminUser, logout };
+  return { user, session, loading, isAdminUser, login, logout };
 };

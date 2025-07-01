@@ -1,24 +1,33 @@
-
+// Silsilah_1/src/components/GuestbookPage.tsx
 import React, { useState } from 'react';
 import { useGuestbook } from '../hooks/useGuestbookData';
+// Pastikan tipe yang diimpor dari supabase.ts
+import { Tables } from '../types/supabase';
+type GuestbookEntry = Tables<'guestbook_entries'>['Row']; // Menggunakan tipe dari Supabase
+
 import { GuestbookIcon, UserIcon } from './Icons';
 
 export const GuestbookPage: React.FC = () => {
+    // Pastikan addEntry di useGuestbookData sudah terhubung ke Supabase
     const { entries, addEntry } = useGuestbook();
     const [name, setName] = useState('');
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => { // Buat fungsi ini async
         e.preventDefault();
         if (!name.trim() || !message.trim()) {
             setError('Nama dan pesan tidak boleh kosong.');
             return;
         }
-        addEntry(name, message);
-        setName('');
-        setMessage('');
-        setError('');
+        try {
+            await addEntry(name, message); // addEntry harus menjadi async function di useGuestbookData
+            setName('');
+            setMessage('');
+            setError('');
+        } catch (err: any) {
+            setError(err.message || 'Gagal mengirim pesan.');
+        }
     };
 
     return (
@@ -73,7 +82,8 @@ export const GuestbookPage: React.FC = () => {
                                     <div className="flex justify-between items-center">
                                         <p className="font-bold text-white">{entry.name}</p>
                                         <p className="text-xs text-gray-500">
-                                            {new Date(entry.date).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
+                                            {/* Perbaikan: Gunakan created_at */}
+                                            {new Date(entry.created_at!).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
                                         </p>
                                     </div>
                                     <p className="text-gray-300 mt-1 whitespace-pre-wrap">{entry.message}</p>
