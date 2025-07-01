@@ -45,14 +45,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "families_spouse1_id_fkey"
+            foreignKeyName: "fk_spouse1"
             columns: ["spouse1_id"]
             isOneToOne: false
             referencedRelation: "individuals"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "families_spouse2_id_fkey"
+            foreignKeyName: "fk_spouse2"
             columns: ["spouse2_id"]
             isOneToOne: false
             referencedRelation: "individuals"
