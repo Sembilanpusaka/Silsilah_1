@@ -1,85 +1,95 @@
-// hooks/useGuestbookData.ts
-import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../supabaseClient';
-import { Tables } from '../types/supabase';
+// Silsilah_1/src/components/GuestbookPage.tsx
+import React, { useState } from 'react';
+import { useGuestbook } from '../hooks/useGuestbookData'; // Ini akan mengimpor useGuestbook dan GuestbookContext
+import { Tables } from '../types/supabase'; // Pastikan path ini benar
+type GuestbookEntry = Tables<'guestbook_entries'>['Row'];
 
-type SupabaseGuestbookEntry = Tables<'guestbook_entries'>['Row'];
-type SupabaseGuestbookEntryInsert = Tables<'guestbook_entries'>['Insert'];
+import { GuestbookIcon, UserIcon } from './Icons'; // Pastikan path ini benar
 
-export const useGuestbookData = () => {
-    const [entries, setEntries] = useState<SupabaseGuestbookEntry[]>([]);
-    const [isLoaded, setIsLoaded] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+export const GuestbookPage: React.FC = () => {
+    const { entries, addEntry } = useGuestbook();
+    const [name, setName] = useState('');
+    const [message, setMessage] = useState('');
+    const [error, setError] = useState('');
 
-    const fetchGuestbookEntries = useCallback(async () => {
-        setIsLoaded(false);
-        setError(null);
-        console.log("[DEBUG: useGuestbookData] Memulai fetching guestbook entries dari Supabase..."); // DEBUG
-        try {
-            const { data, error: supabaseError } = await supabase
-                .from('guestbook_entries')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (supabaseError) {
-                console.error("[ERROR: useGuestbookData] Error fetching guestbook entries:", supabaseError.message); // DEBUG
-                throw supabaseError;
-            }
-            setEntries(data);
-            console.log("[DEBUG: useGuestbookData] Guestbook entries fetched:", data.length); // DEBUG
-        } catch (err: any) {
-            console.error("[ERROR: useGuestbookData] Gagal memuat guestbook entries dari Supabase:", err.message); // DEBUG
-            setError(err.message);
-        } finally {
-            setIsLoaded(true);
-            console.log("[DEBUG: useGuestbookData] Loading guestbook entries selesai."); // DEBUG
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!name.trim() || !message.trim()) {
+            setError('Nama dan pesan tidak boleh kosong.');
+            return;
         }
-    }, []);
-
-    useEffect(() => {
-        fetchGuestbookEntries();
-
-        const channel = supabase
-            .channel('public:guestbook_entries')
-            .on(
-                'postgres_changes',
-                { event: '*', schema: 'public', table: 'guestbook_entries' },
-                (payload) => {
-                    console.log('[DEBUG: Realtime] Perubahan guestbook diterima:', payload); // DEBUG
-                    fetchGuestbookEntries();
-                }
-            )
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-            console.log('[DEBUG: Realtime] Channel Guestbook dibersihkan.'); // DEBUG
-        };
-    }, [fetchGuestbookEntries]);
-
-    const addEntry = useCallback(async (name: string, message: string) => {
-        console.log("[DEBUG: addEntry] Data akan dikirim ke Supabase:", { name, message }); // DEBUG
         try {
-            const newEntry: SupabaseGuestbookEntryInsert = {
-                name,
-                message,
-            };
-            const { data, error: supabaseError } = await supabase
-                .from('guestbook_entries')
-                .insert(newEntry)
-                .select();
-
-            if (supabaseError) {
-                console.error("[DEBUG: addEntry] Error dari Supabase:", supabaseError); // DEBUG
-                throw supabaseError;
-            }
-            console.log("[DEBUG: addEntry] Entry berhasil ditambahkan ke Supabase:", data); // DEBUG
-            // Realtime akan memicu fetchGuestbookEntries, jadi tidak perlu manual setEntries
+            await addEntry(name, message);
+            setName('');
+            setMessage('');
+            setError('');
         } catch (err: any) {
-            console.error("[ERROR: addEntry] Gagal menambahkan entry guestbook:", err.message);
-            setError(err.message);
+            setError(err.message || 'Gagal mengirim pesan.');
         }
-    }, []);
+    };
 
-    return { entries, isLoaded, error, addEntry };
+    return (
+        <div className="container mx-auto p-4 md:p-8">
+            <div className="bg-base-200 p-8 rounded-lg shadow-xl max-w-4xl mx-auto">
+                <div className="text-center mb-8">
+                    <GuestbookIcon className="w-16 h-16 text-accent mx-auto mb-4" />
+                    <h1 className="text-4xl font-bold text-white">Buku Tamu</h1>
+                    <p className="text-gray-400 mt-2">Silakan tinggalkan pesan, masukan, atau komentar Anda.</p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="mb-12 space-y-4">
+                    <div>
+                        <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1">Nama Anda</label>
+                        <input
+                            id="name"
+                            type="text"
+                            value={name}
+                            onChange={e => setName(e.target.value)}
+                            className="w-full bg-base-300 border border-gray-600 rounded-md p-2 text-white"
+                            placeholder="Contoh: John Doe"
+                        />
+                    </div>
+                     <div>
+                        <label htmlFor="message" className="block text-sm font-medium text-gray-300 mb-1">Pesan Anda</label>
+                        <textarea
+                            id="message"
+                            value={message}
+                            onChange={e => setMessage(e.target.value)}
+                            rows={4}
+                            className="w-full bg-base-300 border border-gray-600 rounded-md p-2 text-white"
+                            placeholder="Tulis komentar Anda di sini..."
+                        />
+                    </div>
+                    {error && <p className="text-error text-sm">{error}</p>}
+                    <button type="submit" className="w-full bg-primary hover:bg-secondary text-white font-bold py-2 px-4 rounded-md transition-colors">
+                        Kirim Pesan
+                    </button>
+                </form>
+
+                <div className="space-y-6">
+                    <h2 className="text-2xl font-bold text-white border-b border-base-300 pb-2">Pesan Terbaru</h2>
+                    {entries.length === 0 ? (
+                        <p className="text-gray-500 text-center py-8">Belum ada pesan. Jadilah yang pertama!</p>
+                    ) : (
+                        entries.map(entry => (
+                            <div key={entry.id} className="flex space-x-4 bg-base-100/50 p-4 rounded-lg">
+                                <div className="flex-shrink-0 bg-base-300 rounded-full h-12 w-12 flex items-center justify-center">
+                                    <UserIcon className="h-6 w-6 text-gray-400" />
+                                </div>
+                                <div className="flex-grow">
+                                    <div className="flex justify-between items-center">
+                                        <p className="font-bold text-white">{entry.name}</p>
+                                        <p className="text-xs text-gray-500">
+                                            {new Date(entry.created_at!).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
+                                        </p>
+                                    </div>
+                                    <p className="text-gray-300 mt-1 whitespace-pre-wrap">{entry.message}</p>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+        </div>
+    );
 };

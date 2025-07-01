@@ -4,7 +4,7 @@ import { supabase } from '../supabaseClient';
 import { Tables } from '../types/supabase';
 
 type SupabaseGuestbookEntry = Tables<'guestbook_entries'>['Row'];
-type SupabaseGuestbookEntryInsert = Tables<'guestbook_entries'>['Insert'];
+type SupabaseGuestbookEntryInsert = Tables<'guestbook_entries'>['Insert']; // <--- PERBAIKAN DI SINI: Tambahkan ']'
 
 export const useGuestbookData = () => {
     const [entries, setEntries] = useState<SupabaseGuestbookEntry[]>([]);
@@ -83,9 +83,10 @@ export const useGuestbookData = () => {
     return { entries, isLoaded, error, addEntry };
 };
 
-// --- TAMBAHKAN DUA EKSPOR INI ---
+// Definisi dan ekspor GuestbookContext
 export const GuestbookContext = React.createContext<ReturnType<typeof useGuestbookData> | null>(null);
 
+// Definisi dan ekspor useGuestbook hook
 export const useGuestbook = () => {
     const context = React.useContext(GuestbookContext);
     if (!context) {

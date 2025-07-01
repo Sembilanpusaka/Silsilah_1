@@ -1,8 +1,8 @@
 /** @type {import('tailwindcss').Config} */
-export default { // Jika package.json Anda punya "type": "module", 'export default' itu benar
+export default { // Jika package.json Anda punya "type": "module", ini benar
   content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}", // Ini akan mencakup semua file di src/
+    "./index.html",             
+    "./src/**/*.{js,ts,jsx,tsx}", // Ini mencakup semua file JS/TS/JSX/TSX di dalam src/
   ],
   darkMode: 'class',
   theme: {
