@@ -1,10 +1,10 @@
 // hooks/useGuestbookData.ts
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../supabaseClient';
+import { supabase } from '../supabaseClient'; // <--- Pastikan jalur relatif ini benar
 import { Tables } from '../types/supabase';
 
 type SupabaseGuestbookEntry = Tables<'guestbook_entries'>['Row'];
-type SupabaseGuestbookEntryInsert = Tables<'guestbook_entries'>['Insert']; // <--- PERBAIKAN DI SINI: Tambahkan ']'
+type SupabaseGuestbookEntryInsert = Tables<'guestbook_entries'>['Insert'];
 
 export const useGuestbookData = () => {
     const [entries, setEntries] = useState<SupabaseGuestbookEntry[]>([]);
@@ -45,7 +45,7 @@ export const useGuestbookData = () => {
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'guestbook_entries' },
                 (payload) => {
-                    console.log('[DEBUG: Realtime] Perubahan guestbook diterima:', payload);
+                  console.log('[DEBUG: Realtime] Perubahan guestbook diterima:', payload);
                     fetchGuestbookEntries();
                 }
             )
@@ -83,10 +83,8 @@ export const useGuestbookData = () => {
     return { entries, isLoaded, error, addEntry };
 };
 
-// Definisi dan ekspor GuestbookContext
 export const GuestbookContext = React.createContext<ReturnType<typeof useGuestbookData> | null>(null);
 
-// Definisi dan ekspor useGuestbook hook
 export const useGuestbook = () => {
     const context = React.useContext(GuestbookContext);
     if (!context) {
