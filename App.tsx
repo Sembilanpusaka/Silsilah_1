@@ -9,7 +9,8 @@ import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { HomePage } from './components/HomePage';
 import { IndividualProfile } from './components/IndividualProfile';
-import { FamilyTreeView } => 'components/FamilyTreeView';
+// PERBAIKAN: Kesalahan sintaks pada import FamilyTreeView
+import { FamilyTreeView } from './components/FamilyTreeView'; 
 import { LoginModal } from './components/LoginModal';
 import { InteractiveRelationshipFinder } from './components/InteractiveRelationshipFinder';
 import { AdminPage } from './components/AdminPage';
