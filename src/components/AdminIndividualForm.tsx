@@ -1,7 +1,7 @@
+// Silsilah_1/src/components/AdminIndividualForm.tsx
 import React, { useState, useEffect } from 'react';
-import { Tables } from '../types/supabase'; // Pastikan ini diimpor dengan benar
+import { Tables } from '../types/supabase';
 
-// Definisikan tipe FormIndividual yang sesuai dengan struktur form Anda
 interface FormIndividual {
   id?: string;
   name: string;
@@ -16,20 +16,20 @@ interface FormIndividual {
   education: DetailEntry[] | null;
   works: DetailEntry[] | null;
   sources: DetailEntry[] | null;
-  references: DetailEntry[] | null; // references di form akan di-map ke related_references di Supabase
-  lifeFacts: LifeFactEntry[] | null; // <--- PASTIKAN INI ADA
+  references: DetailEntry[] | null;
+  lifeFacts: LifeFactEntry[] | null; // Pastikan ini ada
 }
 
-interface DetailEntry { // Untuk Pendidikan, Karya, Sumber, Referensi (link & text)
+interface DetailEntry {
   id: string;
   title: string;
   description: string;
   period: string;
 }
 
-interface LifeFactEntry { // <--- PASTIKAN DEFINISI BARU INI ADA
-    id: string; // ID unik untuk React key
-    type: string; // Misalnya: "Lahir", "Sekolah", "Menikah", "Haji"
+interface LifeFactEntry {
+    id: string;
+    type: string;
     date: string | null;
     place: string | null;
     description: string | null;
@@ -37,11 +37,10 @@ interface LifeFactEntry { // <--- PASTIKAN DEFINISI BARU INI ADA
     source_text: string | null;
 }
 
-// Gunakan tipe Supabase yang digenerate untuk memastikan nama kolom sesuai
 type SupabaseIndividualInsert = Tables<'individuals'>['Insert'];
 type SupabaseIndividualUpdate = Tables<'individuals'>['Update'];
 
-enum Gender { // Enum Gender dari supabase.ts Anda
+enum Gender {
   Male = 'male',
   Female = 'female',
   Unknown = 'unknown',
@@ -52,9 +51,9 @@ import { DeleteIcon, PlusIcon } from './Icons';
 import { Modal } from './Modal';
 
 interface AdminIndividualFormProps {
-  onSave: (individual: SupabaseIndividualInsert | SupabaseIndividualUpdate) => void; // Perbaiki tipe onSave
+  onSave: (individual: SupabaseIndividualInsert | SupabaseIndividualUpdate) => void;
   onClose: () => void;
-  initialData?: Tables<'individuals'>['Row'] | null; // initialData datang dari Supabase (snake_case)
+  initialData?: Tables<'individuals'>['Row'] | null;
 }
 
 const emptyIndividualForm: FormIndividual = {
@@ -62,10 +61,9 @@ const emptyIndividualForm: FormIndividual = {
   birth: { date: null, place: null }, death: { date: null, place: null },
   description: null, profession: null, notes: null, childInFamilyId: null,
   education: [], works: [], sources: [], references: [],
-  lifeFacts: [], // <--- INISIALISASI INI
+  lifeFacts: [],
 };
 
-// Helper: Mengonversi data dari format Supabase (snake_case, datar) ke format Form (camelCase, bersarang)
 const convertSupabaseToForm = (supabaseData: Tables<'individuals'>['Row']): FormIndividual => {
   return {
     id: supabaseData.id,
@@ -88,11 +86,10 @@ const convertSupabaseToForm = (supabaseData: Tables<'individuals'>['Row']): Form
     works: supabaseData.works ? (supabaseData.works as DetailEntry[]) : [],
     sources: supabaseData.sources ? (supabaseData.sources as DetailEntry[]) : [],
     references: supabaseData.related_references ? (supabaseData.related_references as DetailEntry[]) : [],
-    lifeFacts: supabaseData.life_events_facts ? (supabaseData.life_events_facts as LifeFactEntry[]) : [], // <--- PASTIKAN INI
+    lifeFacts: supabaseData.life_events_facts ? (supabaseData.life_events_facts as LifeFactEntry[]) : [],
   };
 };
 
-// Helper: Mengonversi data dari format Form (camelCase, bersarang) ke format Supabase (snake_case, datar)
 const convertFormToSupabase = (formData: FormIndividual): SupabaseIndividualInsert | SupabaseIndividualUpdate => {
   const supabaseData: SupabaseIndividualInsert | SupabaseIndividualUpdate = {
     name: formData.name,
@@ -110,7 +107,7 @@ const convertFormToSupabase = (formData: FormIndividual): SupabaseIndividualInse
     works: formData.works && formData.works.length > 0 ? formData.works as any : null,
     sources: formData.sources && formData.sources.length > 0 ? formData.sources as any : null,
     related_references: formData.references && formData.references.length > 0 ? formData.references as any : null,
-    life_events_facts: formData.lifeFacts && formData.lifeFacts.length > 0 ? formData.lifeFacts as any : null, // <--- PASTIKAN INI
+    life_events_facts: formData.lifeFacts && formData.lifeFacts.length > 0 ? formData.lifeFacts as any : null,
   };
 
   if ('id' in formData && formData.id) {
@@ -165,7 +162,6 @@ const DetailEntrySection: React.FC<{
 };
 
 
-// --- Komponen BARU untuk Fakta dan Peristiwa Kehidupan ---
 const LifeFactSection: React.FC<{
   title: string;
   entries: LifeFactEntry[];
@@ -330,7 +326,6 @@ export const AdminIndividualForm: React.FC<AdminIndividualFormProps> = ({ onSave
       <DetailEntrySection title="Sumber" entries={formData.sources || []} updateEntries={(e) => setFormData(prev => ({...prev, sources: e}))} />
       <DetailEntrySection title="Referensi" entries={formData.references || []} updateEntries={(e) => setFormData(prev => ({...prev, references: e}))} />
 
-      {/* <--- TAMBAHKAN BAGIAN INI UNTUK FAKTA DAN PERISTIWA KEHIDUPAN --- */}
       <LifeFactSection title="Fakta & Peristiwa Kehidupan" entries={formData.lifeFacts || []} updateEntries={(e) => setFormData(prev => ({...prev, lifeFacts: e}))} />
 
 
