@@ -44,13 +44,13 @@ export const AdminPage: React.FC = () => {
         }
         setFamilyModalOpen(false);
     };
-    
+
     const handleDeleteIndividual = (id: string) => {
         if(window.confirm("Apakah Anda yakin ingin menghapus individu ini? Tindakan ini tidak dapat diurungkan.")){
             deleteIndividual(id);
         }
     };
-    
+
     const handleDeleteFamily = (id: string) => {
         if(window.confirm("Apakah Anda yakin ingin menghapus keluarga ini? Ini akan menghapus hubungan pasangan dan orang tua-anak.")){
             deleteFamily(id);
@@ -72,29 +72,34 @@ export const AdminPage: React.FC = () => {
                     </button>
                 </div>
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead>
-                            <tr className="border-b border-base-300">
-                                <th className="p-3">Nama</th>
-                                <th className="p-3 hidden md:table-cell">Tanggal Lahir</th>
-                                <th className="p-3 hidden md:table-cell">Tanggal Meninggal</th>
-                                <th className="p-3">Tindakan</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {individuals.map(ind => (
-                                <tr key={ind.id} className="border-b border-base-300 hover:bg-base-300/50">
-                                    <td className="p-3 font-medium">{ind.name}</td>
-                                    <td className="p-3 hidden md:table-cell">{ind.birth?.date || '-'}</td>
-                                    <td className="p-3 hidden md:table-cell">{ind.death?.date || '-'}</td>
-                                    <td className="p-3 flex items-center space-x-2">
-                                        <button onClick={() => openIndividualModal(ind)} className="p-2 text-blue-400 hover:text-blue-300"><EditIcon/></button>
-                                        <button onClick={() => handleDeleteIndividual(ind.id)} className="p-2 text-error hover:text-red-400"><DeleteIcon/></button>
-                                    </td>
+                    {individuals.length === 0 ? (
+                        <p className="text-gray-400 text-center py-8">Belum ada data individu. Silakan tambah individu baru.</p>
+                    ) : (
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="border-b border-base-300">
+                                    <th className="p-3">Nama</th>
+                                    <th className="p-3 hidden md:table-cell">Tanggal Lahir</th>
+                                    <th className="p-3 hidden md:table-cell">Tanggal Meninggal</th>
+                                    <th className="p-3">Tindakan</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {individuals.map(ind => (
+                                    <tr key={ind.id} className="border-b border-base-300 hover:bg-base-300/50">
+                                        <td className="p-3 font-medium">{ind.name}</td>
+                                        {/* Perbaikan: Gunakan optional chaining untuk birth dan death */}
+                                        <td className="p-3 hidden md:table-cell">{ind.birth?.date || '-'}</td>
+                                        <td className="p-3 hidden md:table-cell">{ind.death?.date || '-'}</td>
+                                        <td className="p-3 flex items-center space-x-2">
+                                            <button onClick={() => openIndividualModal(ind)} className="p-2 text-blue-400 hover:text-blue-300"><EditIcon/></button>
+                                            <button onClick={() => handleDeleteIndividual(ind.id)} className="p-2 text-error hover:text-red-400"><DeleteIcon/></button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
                 </div>
             </div>
 
@@ -107,40 +112,45 @@ export const AdminPage: React.FC = () => {
                     </button>
                 </div>
                  <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead>
-                            <tr className="border-b border-base-300">
-                                <th className="p-3">Pasangan 1</th>
-                                <th className="p-3">Pasangan 2</th>
-                                <th className="p-3 hidden md:table-cell">Jumlah Anak</th>
-                                <th className="p-3">Tindakan</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {families.map(fam => (
-                                <tr key={fam.id} className="border-b border-base-300 hover:bg-base-300/50">
-                                    <td className="p-3 font-medium">{getSpouseName(fam.spouse1Id)}</td>
-                                    <td className="p-3 font-medium">{getSpouseName(fam.spouse2Id)}</td>
-                                    <td className="p-3 hidden md:table-cell">{fam.childrenIds.length}</td>
-                                    <td className="p-3 flex items-center space-x-2">
-                                        <button onClick={() => openFamilyModal(fam)} className="p-2 text-blue-400 hover:text-blue-300"><EditIcon/></button>
-                                        <button onClick={() => handleDeleteFamily(fam.id)} className="p-2 text-error hover:text-red-400"><DeleteIcon/></button>
-                                    </td>
+                    {families.length === 0 ? (
+                        <p className="text-gray-400 text-center py-8">Belum ada data keluarga. Silakan tambah keluarga baru.</p>
+                    ) : (
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="border-b border-base-300">
+                                    <th className="p-3">Pasangan 1</th>
+                                    <th className="p-3">Pasangan 2</th>
+                                    <th className="p-3 hidden md:table-cell">Jumlah Anak</th>
+                                    <th className="p-3">Tindakan</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {families.map(fam => (
+                                    <tr key={fam.id} className="border-b border-base-300 hover:bg-base-300/50">
+                                        <td className="p-3 font-medium">{getSpouseName(fam.spouse1Id)}</td>
+                                        <td className="p-3 font-medium">{getSpouseName(fam.spouse2Id)}</td>
+                                        {/* PERBAIKAN UTAMA: Pastikan fam.childrenIds adalah array */}
+                                        <td className="p-3 hidden md:table-cell">{(fam.childrenIds || []).length}</td>
+                                        <td className="p-3 flex items-center space-x-2">
+                                            <button onClick={() => openFamilyModal(fam)} className="p-2 text-blue-400 hover:text-blue-300"><EditIcon/></button>
+                                            <button onClick={() => handleDeleteFamily(fam.id)} className="p-2 text-error hover:text-red-400"><DeleteIcon/></button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
                 </div>
             </div>
 
             <Modal isOpen={isIndividualModalOpen} onClose={() => setIndividualModalOpen(false)} title={editingIndividual ? 'Edit Individu' : 'Tambah Individu Baru'}>
-                <AdminIndividualForm 
-                    onSave={handleSaveIndividual} 
-                    onClose={() => setIndividualModalOpen(false)} 
+                <AdminIndividualForm
+                    onSave={handleSaveIndividual}
+                    onClose={() => setIndividualModalOpen(false)}
                     initialData={editingIndividual}
                 />
             </Modal>
-            
+
             <Modal isOpen={isFamilyModalOpen} onClose={() => setFamilyModalOpen(false)} title={editingFamily ? 'Edit Keluarga' : 'Tambah Keluarga Baru'}>
                 <AdminFamilyForm
                     onSave={handleSaveFamily}
