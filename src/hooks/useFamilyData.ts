@@ -53,11 +53,13 @@ export const useFamilyData = () => {
   useEffect(() => {
     fetchFamilyData();
 
+    // Setup Realtime subscriptions
+    // Pastikan Realtime diaktifkan untuk tabel 'individuals' dan 'families' di Dasbor Supabase Anda
     const individualsChannel = supabase
       .channel('individuals_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'individuals' }, (payload) => {
         console.log("[DEBUG: Realtime] Perubahan individu terdeteksi:", payload);
-        fetchFamilyData();
+        fetchFamilyData(); // Re-fetch data on any change
       })
       .subscribe();
 
@@ -65,7 +67,7 @@ export const useFamilyData = () => {
       .channel('families_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'families' }, (payload) => {
         console.log("[DEBUG: Realtime] Perubahan keluarga terdeteksi:", payload);
-        fetchFamilyData();
+        fetchFamilyData(); // Re-fetch data on any change
       })
       .subscribe();
 
@@ -86,13 +88,14 @@ export const useFamilyData = () => {
         .select();
       if (error) throw error;
       console.log("[DEBUG: addIndividual] Data individu berhasil ditambahkan ke Supabase:", newIndividual);
+      await fetchFamilyData(); // <--- TAMBAHKAN BARIS INI: Paksa re-fetch setelah insert
       return newIndividual[0];
     } catch (err: any) {
       console.error("[ERROR: addIndividual] Gagal menambahkan individu:", err.message);
       setError(err.message);
       throw err;
     }
-  }, []);
+  }, [fetchFamilyData]); // Tambahkan fetchFamilyData ke dependensi
 
   const updateIndividual = useCallback(async (individual: Tables<'individuals'>['Update']) => {
     console.log("[DEBUG: updateIndividual] Data akan dikirim ke Supabase:", individual);
@@ -104,13 +107,14 @@ export const useFamilyData = () => {
         .select();
       if (error) throw error;
       console.log("[DEBUG: updateIndividual] Data individu berhasil diperbarui di Supabase.");
+      await fetchFamilyData(); // <--- TAMBAHKAN BARIS INI: Paksa re-fetch setelah update
       return updatedIndividual[0];
     } catch (err: any) {
       console.error("[ERROR: updateIndividual] Gagal memperbarui individu:", err.message);
       setError(err.message);
       throw err;
     }
-  }, []);
+  }, [fetchFamilyData]);
 
   const deleteIndividual = useCallback(async (id: string) => {
     try {
@@ -120,12 +124,13 @@ export const useFamilyData = () => {
         .eq('id', id);
       if (error) throw error;
       console.log("[DEBUG: deleteIndividual] Individu berhasil dihapus.");
+      await fetchFamilyData(); // <--- TAMBAHKAN BARIS INI: Paksa re-fetch setelah delete
     } catch (err: any) {
       console.error("[ERROR: deleteIndividual] Gagal menghapus individu:", err.message);
       setError(err.message);
       throw err;
     }
-  }, []);
+  }, [fetchFamilyData]);
 
   // --- Fungsi CRUD untuk Keluarga ---
   const addFamily = useCallback(async (family: Tables<'families'>['Insert']) => {
@@ -155,13 +160,14 @@ export const useFamilyData = () => {
           console.log("[DEBUG: addFamily] child_in_family_id anak-anak berhasil diperbarui.");
         }
       }
+      await fetchFamilyData(); // <--- TAMBAHKAN BARIS INI: Paksa re-fetch setelah insert keluarga
       return newFamily[0];
     } catch (err: any) {
       console.error("[ERROR: addFamily] Gagal menambahkan keluarga:", err.message);
       setError(err.message);
       throw err;
     }
-  }, []);
+  }, [fetchFamilyData]);
 
   const updateFamily = useCallback(async (family: Tables<'families'>['Update']) => {
     console.log("[DEBUG: updateFamily] Data akan dikirim ke Supabase:", family);
@@ -219,13 +225,14 @@ export const useFamilyData = () => {
         }
       }
 
+      await fetchFamilyData(); // <--- TAMBAHKAN BARIS INI: Paksa re-fetch setelah update keluarga
       return updatedFamily[0];
     } catch (err: any) {
       console.error("[ERROR: updateFamily] Gagal memperbarui keluarga:", err.message);
       setError(err.message);
       throw err;
     }
-  }, []);
+  }, [fetchFamilyData]);
 
   const deleteFamily = useCallback(async (id: string) => {
     try {
@@ -254,12 +261,13 @@ export const useFamilyData = () => {
         .eq('id', id);
       if (error) throw error;
       console.log("[DEBUG: deleteFamily] Keluarga berhasil dihapus.");
+      await fetchFamilyData(); // <--- TAMBAHKAN BARIS INI: Paksa re-fetch setelah delete keluarga
     } catch (err: any) {
       console.error("[ERROR: deleteFamily] Gagal menghapus keluarga:", err.message);
       setError(err.message);
       throw err;
     }
-  }, []);
+  }, [fetchFamilyData]);
 
 
   return useMemo(() => ({
@@ -280,8 +288,6 @@ export const useFamilyData = () => {
   ]);
 };
 
-// --- DEFINISI KONTEKS & HOOK useFamily ---
-// Pastikan ini juga diekspor di level teratas file.
 export const FamilyDataContext = React.createContext<ReturnType<typeof useFamilyData> | null>(null);
 
 export const useFamily = () => {
