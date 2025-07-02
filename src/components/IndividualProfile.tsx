@@ -1,21 +1,32 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useFamily } from '../hooks/useFamilyData';
-import { Tables } from '../types/supabase';
-// Anda mungkin masih perlu tipe DetailEntry jika didefinisikan di '../types'
+import { Tables } from '../types/supabase'; // Pastikan ini diimpor dengan benar
+// Asumsi DetailEntry dan LifeFactEntry didefinisikan secara global atau di types.ts
+// Saya sertakan definisinya di sini untuk kejelasan, Anda bisa menghapusnya jika sudah di tempat lain.
 interface DetailEntry {
     id: string; // ID lokal untuk React key
     title: string;
     description: string;
     period: string;
 }
+interface LifeFactEntry {
+    id: string; // ID unik untuk React key
+    type: string;
+    date: string | null;
+    place: string | null;
+    description: string | null;
+    source_link: string | null;
+    source_text: string | null;
+}
+
 type Individual = Tables<'individuals'>['Row'];
 type Family = Tables<'families'>['Row'];
 type Gender = Tables<'public'>['Enums']['gender_enum'];
 
 import { MaleIcon, FemaleIcon } from './Icons';
 
-// --- EventCard yang diperbarui untuk menerima date dan place langsung ---
+// --- EventCard (Tidak Ada Perubahan) ---
 const EventCard: React.FC<{ title: string; date?: string | null; place?: string | null; detail?: string }> = ({ title, date, place, detail }) => {
     if (!date && !place && !detail) return null;
     return (
@@ -83,6 +94,34 @@ const DetailSection: React.FC<{title: string, items?: DetailEntry[] | null}> = (
         </div>
     )
 }
+
+// --- Komponen BARU untuk menampilkan Fakta dan Peristiwa Kehidupan di halaman profil ---
+const LifeFactsDisplaySection: React.FC<{title: string, items?: LifeFactEntry[] | null}> = ({ title, items}) => {
+    if (!items || items.length === 0) return null;
+
+    const parsedItems = items as LifeFactEntry[];
+
+    return (
+        <div className="mb-8">
+            <h3 className="text-xl font-bold text-white mb-4 border-b border-base-300 pb-2">{title}</h3>
+            <ul className="space-y-4">
+                {parsedItems.map((item, index) => (
+                    <li key={item.id || `life-fact-${index}`} className="bg-base-100/50 p-4 rounded-lg">
+                        <p className="font-semibold text-accent">{item.type} {item.date && <span className="text-gray-400 font-normal text-sm">({item.date})</span>}</p>
+                        {item.place && <p className="text-sm text-gray-400">Tempat: {item.place}</p>}
+                        {item.description && <p className="text-gray-300 whitespace-pre-wrap mt-1">{item.description}</p>}
+                        {(item.source_link || item.source_text) && (
+                            <div className="text-xs text-gray-500 mt-2">
+                                Sumber: {item.source_link ? <a href={item.source_link} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">{item.source_text || item.source_link}</a> : item.source_text}
+                            </div>
+                        )}
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
+};
+
 
 // --- Komponen Utama IndividualProfile ---
 
@@ -164,16 +203,13 @@ export const IndividualProfile: React.FC = () => {
                 <div className="p-8">
                     {activeTab === 'overview' && (
                         <div>
-                            <h2 className="text-2xl font-bold text-white mb-6">Fakta dan Peristiwa</h2>
+                            <h2 className="text-2xl font-bold text-white mb-6">Fakta dan Peristiwa Utama</h2>
                             <div className="relative">
-                                {/* Perbaikan: Meneruskan birth_date dan birth_place langsung ke EventCard */}
                                 <EventCard title="Lahir" date={individual.birth_date} place={individual.birth_place} />
                                 {spouseFamilies.map(family => {
                                     const spouse = data.individuals.get(family.spouse1_id === id ? family.spouse2_id! : family.spouse1_id!);
-                                    // Perbaikan: Meneruskan marriage_date dan marriage_place langsung ke EventCard
                                     return family.marriage_date && <EventCard key={`m-${family.id}`} title="Menikah" date={family.marriage_date} place={family.marriage_place} detail={`dengan ${spouse?.name || 'Tidak Dikenal'}`} />
                                 })}
-                                {/* Perbaikan: Meneruskan death_date dan death_place langsung ke EventCard */}
                                 <EventCard title="Meninggal" date={individual.death_date} place={individual.death_place} />
                             </div>
                              {individual.notes && (
@@ -241,6 +277,8 @@ export const IndividualProfile: React.FC = () => {
                             <DetailSection title="Karya" items={individual.works as DetailEntry[] | null} />
                             <DetailSection title="Sumber Data" items={individual.sources as DetailEntry[] | null} />
                             <DetailSection title="Referensi" items={individual.related_references as DetailEntry[] | null} />
+                            {/* <--- TAMBAHKAN BAGIAN BARU UNTUK FAKTA & PERISTIWA KEHIDUPAN DI SINI ---> */}
+                            <LifeFactsDisplaySection title="Fakta & Peristiwa Kehidupan Lengkap" items={individual.life_events_facts as LifeFactEntry[] | null} />
                         </div>
                     )}
                 </div>

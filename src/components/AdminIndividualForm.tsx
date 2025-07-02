@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-// Pastikan impor Tables dari supabase.ts
-import { Tables } from '../types/supabase';
+import { Tables } from '../types/supabase'; // Pastikan ini diimpor dengan benar
 
 // Definisikan tipe FormIndividual yang sesuai dengan struktur form Anda
 interface FormIndividual {
@@ -18,7 +17,7 @@ interface FormIndividual {
   works: DetailEntry[] | null;
   sources: DetailEntry[] | null;
   references: DetailEntry[] | null; // references di form akan di-map ke related_references di Supabase
-  lifeFacts: LifeFactEntry[] | null; // <--- TAMBAHKAN INI
+  lifeFacts: LifeFactEntry[] | null; // <--- PASTIKAN INI ADA
 }
 
 interface DetailEntry { // Untuk Pendidikan, Karya, Sumber, Referensi (link & text)
@@ -28,7 +27,7 @@ interface DetailEntry { // Untuk Pendidikan, Karya, Sumber, Referensi (link & te
   period: string;
 }
 
-interface LifeFactEntry { // <--- DEFINISI BARU: Untuk Fakta & Peristiwa (link & text)
+interface LifeFactEntry { // <--- PASTIKAN DEFINISI BARU INI ADA
     id: string; // ID unik untuk React key
     type: string; // Misalnya: "Lahir", "Sekolah", "Menikah", "Haji"
     date: string | null;
@@ -63,7 +62,7 @@ const emptyIndividualForm: FormIndividual = {
   birth: { date: null, place: null }, death: { date: null, place: null },
   description: null, profession: null, notes: null, childInFamilyId: null,
   education: [], works: [], sources: [], references: [],
-  lifeFacts: [], // <--- INISIALISASI
+  lifeFacts: [], // <--- INISIALISASI INI
 };
 
 // Helper: Mengonversi data dari format Supabase (snake_case, datar) ke format Form (camelCase, bersarang)
@@ -89,7 +88,7 @@ const convertSupabaseToForm = (supabaseData: Tables<'individuals'>['Row']): Form
     works: supabaseData.works ? (supabaseData.works as DetailEntry[]) : [],
     sources: supabaseData.sources ? (supabaseData.sources as DetailEntry[]) : [],
     references: supabaseData.related_references ? (supabaseData.related_references as DetailEntry[]) : [],
-    lifeFacts: supabaseData.life_events_facts ? (supabaseData.life_events_facts as LifeFactEntry[]) : [], // <--- TAMBAHKAN INI
+    lifeFacts: supabaseData.life_events_facts ? (supabaseData.life_events_facts as LifeFactEntry[]) : [], // <--- PASTIKAN INI
   };
 };
 
@@ -111,7 +110,7 @@ const convertFormToSupabase = (formData: FormIndividual): SupabaseIndividualInse
     works: formData.works && formData.works.length > 0 ? formData.works as any : null,
     sources: formData.sources && formData.sources.length > 0 ? formData.sources as any : null,
     related_references: formData.references && formData.references.length > 0 ? formData.references as any : null,
-    life_events_facts: formData.lifeFacts && formData.lifeFacts.length > 0 ? formData.lifeFacts as any : null, // <--- TAMBAHKAN INI
+    life_events_facts: formData.lifeFacts && formData.lifeFacts.length > 0 ? formData.lifeFacts as any : null, // <--- PASTIKAN INI
   };
 
   if ('id' in formData && formData.id) {
