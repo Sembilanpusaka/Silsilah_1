@@ -28,8 +28,8 @@ export const useAuth = (): UseAuthResult => {
       } else {
         setSession(session);
         setUser(session?.user || null);
-        // Pastikan email ini adalah email ADMIN yang terdaftar di Supabase Auth
-        setIsAdminUser(session?.user?.email === 'admin@example.com');
+        // PERBAIKAN DI SINI: Gunakan email admin Anda yang sebenarnya
+        setIsAdminUser(session?.user?.email === 'punkysme@gmail.com');
       }
       setLoading(false);
     };
@@ -40,8 +40,8 @@ export const useAuth = (): UseAuthResult => {
       (_event, session) => {
         setSession(session);
         setUser(session?.user || null);
-        // Pastikan email ini adalah email ADMIN yang terdaftar di Supabase Auth
-        setIsAdminUser(session?.user?.email === 'admin@example.com');
+        // PERBAIKAN DI SINI: Gunakan email admin Anda yang sebenarnya
+        setIsAdminUser(session?.user?.email === 'punkysme@gmail.com');
         setLoading(false);
       }
     );
@@ -55,7 +55,6 @@ export const useAuth = (): UseAuthResult => {
 
   const login = useCallback(async (email: string, password: string) => {
     setLoading(true);
-    // Ini adalah panggilan langsung ke API Supabase Auth
     const { data, error } = await supabase.auth.signInWithPassword({
       email: email,
       password: password,

@@ -1,17 +1,18 @@
-import React, { useState } from 'react';
+// Silsilah_1/src/components/IndividualProfile.tsx
+import React, { useState, useMemo, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useFamily } from '../hooks/useFamilyData';
-import { Tables } from '../types/supabase'; // Pastikan ini diimpor dengan benar
+import { Tables } from '../types/supabase';
+
 // Asumsi DetailEntry dan LifeFactEntry didefinisikan secara global atau di types.ts
-// Saya sertakan definisinya di sini untuk kejelasan, Anda bisa menghapusnya jika sudah di tempat lain.
 interface DetailEntry {
-    id: string; // ID lokal untuk React key
+    id: string;
     title: string;
     description: string;
     period: string;
 }
 interface LifeFactEntry {
-    id: string; // ID unik untuk React key
+    id: string;
     type: string;
     date: string | null;
     place: string | null;
@@ -26,7 +27,6 @@ type Gender = Tables<'public'>['Enums']['gender_enum'];
 
 import { MaleIcon, FemaleIcon } from './Icons';
 
-// --- EventCard (Tidak Ada Perubahan) ---
 const EventCard: React.FC<{ title: string; date?: string | null; place?: string | null; detail?: string }> = ({ title, date, place, detail }) => {
     if (!date && !place && !detail) return null;
     return (
@@ -46,8 +46,6 @@ const EventCard: React.FC<{ title: string; date?: string | null; place?: string 
     );
 };
 
-// ... (FamilyMemberLink, DescendantTree - tidak ada perubahan)
-
 const FamilyMemberLink: React.FC<{ individual?: Individual | null, relationship?: string }> = ({ individual, relationship }) => {
     if (!individual) return null;
     return (
@@ -61,19 +59,26 @@ const FamilyMemberLink: React.FC<{ individual?: Individual | null, relationship?
     );
 };
 
-const DescendantTree: React.FC<{ descendants: (Individual & { children?: any[] })[] }> = ({ descendants }) => {
+// Pastikan DescendantTreeDisplay didefinisikan di sini atau diimpor jika ini file terpisah
+const DescendantTreeDisplay: React.FC<{ descendants: (Individual & { children?: any[] })[] }> = ({ descendants }) => {
     if (descendants.length === 0) return null;
     return (
         <ul className="pl-6 border-l border-base-300 space-y-2">
             {descendants.map(desc => (
                 <li key={desc.id}>
-                    <FamilyMemberLink individual={desc} relationship="Keturunan" />
-                    {desc.children && <DescendantTree descendants={desc.children} />}
+                    <FamilyMemberLink individual={useMemo(() => ({
+                        id: desc.id, name: desc.name, photo_url: desc.photo_url, gender: desc.gender,
+                        birth_date: desc.birth_date, birth_place: desc.birth_place, death_date: desc.death_date, death_place: desc.death_place,
+                        description: desc.description, profession: desc.profession, notes: desc.notes, child_in_family_id: desc.child_in_family_id,
+                        education: desc.education, works: desc.works, sources: desc.sources, related_references: desc.related_references, life_events_facts: desc.life_events_facts
+                    }), [desc])} relationship="Keturunan" />
+                    {desc.children && <DescendantTreeDisplay descendants={desc.children} />}
                 </li>
             ))}
         </ul>
     );
 };
+
 
 const DetailSection: React.FC<{title: string, items?: DetailEntry[] | null}> = ({ title, items}) => {
     if (!items || items.length === 0) return null;
@@ -95,7 +100,6 @@ const DetailSection: React.FC<{title: string, items?: DetailEntry[] | null}> = (
     )
 }
 
-// --- Komponen BARU untuk menampilkan Fakta dan Peristiwa Kehidupan di halaman profil ---
 const LifeFactsDisplaySection: React.FC<{title: string, items?: LifeFactEntry[] | null}> = ({ title, items}) => {
     if (!items || items.length === 0) return null;
 
@@ -112,7 +116,7 @@ const LifeFactsDisplaySection: React.FC<{title: string, items?: LifeFactEntry[] 
                         {item.description && <p className="text-gray-300 whitespace-pre-wrap mt-1">{item.description}</p>}
                         {(item.source_link || item.source_text) && (
                             <div className="text-xs text-gray-500 mt-2">
-                                Sumber: {item.source_link ? <a href={item.source_link} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">{item.source_text || item.source_link}</a> : item.source_text}
+                                Sumber: {item.source_link ? <a href={item.source_link} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">{item.source_text || item.source_link}</a> : item.source_link}
                             </div>
                         )}
                     </li>
@@ -130,11 +134,12 @@ export const IndividualProfile: React.FC = () => {
     const { data } = useFamily();
     const [activeTab, setActiveTab] = useState('overview');
 
-    if (!id || !data.individuals.has(id)) {
+    const individual = useMemo(() => id ? data.individuals.get(id) : undefined, [id, data.individuals]);
+
+
+    if (!id || !individual) {
         return <div className="text-center p-8 text-xl text-error">Individu tidak ditemukan.</div>;
     }
-
-    const individual = data.individuals.get(id)!;
 
     const parentFamily = individual.child_in_family_id ? data.families.get(individual.child_in_family_id) : undefined;
     const parents = {
@@ -142,9 +147,15 @@ export const IndividualProfile: React.FC = () => {
         mother: parentFamily?.spouse2_id ? data.individuals.get(parentFamily.spouse2_id) : undefined,
     };
 
-    const spouseFamilies = Array.from(data.families.values()).filter(f => f.spouse1_id === id || f.spouse2_id === id);
+    const spouseFamilies = useMemo(() => {
+        return Array.from(data.families.values()).filter(f => f.spouse1_id === id || f.spouse2_id === id);
+    }, [id, data.families]);
 
-    const getDescendants = (personId: string): (Individual & { children?: any[] })[] => {
+
+    const getDescendants = useCallback((personId: string, visited = new Set<string>()): (Individual & { children?: any[] })[] => {
+        if (visited.has(personId)) return [];
+        visited.add(personId);
+
         const descendantsList: (Individual & { children?: any[] })[] = [];
         const familiesAsSpouse = Array.from(data.families.values()).filter(f => f.spouse1_id === personId || f.spouse2_id === personId);
 
@@ -154,15 +165,16 @@ export const IndividualProfile: React.FC = () => {
                 if (child) {
                     descendantsList.push({
                         ...child,
-                        children: getDescendants(child.id)
+                        children: getDescendants(child.id, new Set(visited))
                     });
                 }
             }
         }
         return descendantsList;
-    };
+    }, [data.individuals, data.families]);
 
-    const descendants = getDescendants(individual.id);
+    const descendants = useMemo(() => getDescendants(individual.id), [individual.id, getDescendants]);
+
 
     const TabButton: React.FC<{tabName: string; label: string}> = ({tabName, label}) => (
          <button
@@ -205,12 +217,12 @@ export const IndividualProfile: React.FC = () => {
                         <div>
                             <h2 className="text-2xl font-bold text-white mb-6">Fakta dan Peristiwa Utama</h2>
                             <div className="relative">
-                                <EventCard title="Lahir" date={individual.birth_date} place={individual.birth_place} />
+                                {individual.birth_date && <EventCard title="Lahir" date={individual.birth_date} place={individual.birth_place} />}
                                 {spouseFamilies.map(family => {
                                     const spouse = data.individuals.get(family.spouse1_id === id ? family.spouse2_id! : family.spouse1_id!);
                                     return family.marriage_date && <EventCard key={`m-${family.id}`} title="Menikah" date={family.marriage_date} place={family.marriage_place} detail={`dengan ${spouse?.name || 'Tidak Dikenal'}`} />
                                 })}
-                                <EventCard title="Meninggal" date={individual.death_date} place={individual.death_place} />
+                                {individual.death_date && <EventCard title="Meninggal" date={individual.death_date} place={individual.death_place} />}
                             </div>
                              {individual.notes && (
                                 <div className="mt-8">
@@ -277,7 +289,6 @@ export const IndividualProfile: React.FC = () => {
                             <DetailSection title="Karya" items={individual.works as DetailEntry[] | null} />
                             <DetailSection title="Sumber Data" items={individual.sources as DetailEntry[] | null} />
                             <DetailSection title="Referensi" items={individual.related_references as DetailEntry[] | null} />
-                            {/* <--- TAMBAHKAN BAGIAN BARU UNTUK FAKTA & PERISTIWA KEHIDUPAN DI SINI ---> */}
                             <LifeFactsDisplaySection title="Fakta & Peristiwa Kehidupan Lengkap" items={individual.life_events_facts as LifeFactEntry[] | null} />
                         </div>
                     )}

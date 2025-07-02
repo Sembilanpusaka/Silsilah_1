@@ -1,210 +1,256 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+// Silsilah_1/src/components/FamilyTreeView.tsx
+import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
+import { useNavigate, useParams, Link } from 'react-router-dom'; // <--- PASTIKAN 'Link' ADA DI SINI
 import { useFamily } from '../hooks/useFamilyData';
-import { Individual, Family, Gender } from '../types';
+import { Tables } from '../types/supabase';
 
-// By declaring `d3` as a var and a namespace, we can use it both for function calls (d3.select)
-// and for types (d3.HierarchyNode). TypeScript merges these declarations.
-declare var d3: {
-    hierarchy: <T>(data: T) => d3.HierarchyNode<T>;
-    tree: () => any;
-    linkVertical: () => any;
-    zoom: () => any;
-    select: (selector: SVGSVGElement | null) => any;
-};
+type Individual = Tables<'individuals'>['Row'];
+type Family = Tables<'families'>['Row'];
 
-declare namespace d3 {
-    interface HierarchyNode<Datum> {
-        data: Datum;
-        depth: number;
-        height: number;
-        parent: HierarchyNode<Datum> | null;
-        children?: HierarchyNode<Datum>[];
-        x?: number;
-        y?: number;
-        
-        links(): { source: HierarchyNode<Datum>, target: HierarchyNode<Datum> }[];
-        descendants(): HierarchyNode<Datum>[];
-        each(callback: (node: HierarchyNode<Datum>) => void): void;
-    }
+interface TreeNode {
+    id: string;
+    name: string;
+    children?: TreeNode[];
 }
 
-interface TreeNode extends d3.HierarchyNode<Individual> {
-  x: number;
-  y: number;
-  children?: TreeNode[];
-  parent: TreeNode | null;
-}
-
-const buildHierarchy = (individualId: string, individuals: Map<string, Individual>, families: Map<string, Family>): Individual | null => {
-    const rootInd = individuals.get(individualId);
-    if (!rootInd) return null;
-
-    const hierarchyRoot: any = { ...rootInd, children: [] };
-    const processedFamilies = new Set<string>();
-
-    const findChildren = (person: any) => {
-        const spouseFamilies = Array.from(families.values()).filter(f => f.spouse1Id === person.id || f.spouse2Id === person.id);
-        for (const family of spouseFamilies) {
-            if (processedFamilies.has(family.id)) continue;
-            processedFamilies.add(family.id);
-
-            family.childrenIds.forEach(childId => {
-                const child = individuals.get(childId);
-                if (child) {
-                    const childNode: any = { ...child, children: [] };
-                    person.children.push(childNode);
-                    findChildren(childNode);
-                }
-            });
-        }
+interface AncestorNode {
+    id: string;
+    name: string;
+    parents?: {
+        father?: AncestorNode;
+        mother?: AncestorNode;
     };
-    findChildren(hierarchyRoot);
-    return hierarchyRoot;
+}
+
+const FamilyMemberLink: React.FC<{ individual?: Individual | null, relationship?: string }> = ({ individual, relationship }) => {
+    if (!individual) return null;
+    return (
+        <Link to={`/individual/${individual.id}`} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-base-300 transition-colors">
+            <img src={individual.photo_url || 'https://picsum.photos/seed/person/50/50'} alt={individual.name || 'Unknown'} className="w-10 h-10 rounded-full object-cover" />
+            <div>
+                <p className="font-semibold text-white">{individual.name}</p>
+                {relationship && <p className="text-sm text-gray-400">{relationship}</p>}
+            </div>
+        </Link>
+    );
 };
+
+const DescendantTreeDisplay: React.FC<{ node: TreeNode }> = ({ node }) => (
+    <ul className="pl-6 border-l border-base-300 space-y-2">
+        <li>
+            <FamilyMemberLink individual={useMemo(() => ({
+                id: node.id, name: node.name, photo_url: '', gender: 'unknown', birth_date: null, birth_place: null, death_date: null, death_place: null, description: null, profession: null, notes: null, child_in_family_id: null, education: null, works: null, sources: null, related_references: null, life_events_facts: null
+            }), [node.id, node.name])} />
+            {node.children && node.children.length > 0 && (
+                <div className="mt-2">
+                    {node.children.map(child => (
+                        <DescendantTreeDisplay key={child.id} node={child} />
+                    ))}
+                </div>
+            )}
+        </li>
+    </ul>
+);
+
+const AncestorTreeDisplay: React.FC<{ node: AncestorNode }> = ({ node }) => (
+    <div className="flex items-center space-x-4">
+        <FamilyMemberLink individual={useMemo(() => ({
+            id: node.id, name: node.name, photo_url: '', gender: 'unknown', birth_date: null, birth_place: null, death_date: null, death_place: null, description: null, profession: null, notes: null, child_in_family_id: null, education: null, works: null, sources: null, related_references: null, life_events_facts: null
+        }), [node.id, node.name])} />
+        {node.parents && (node.parents.father || node.parents.mother) && (
+            <div className="flex flex-col space-y-2 ml-8 border-l border-base-300 pl-4">
+                {node.parents.father && (
+                    <div className="flex items-center">
+                        <span className="text-gray-400 text-sm mr-2">Ayah:</span>
+                        <AncestorTreeDisplay node={node.parents.father} />
+                    </div>
+                )}
+                {node.parents.mother && (
+                    <div className="flex items-center">
+                        <span className="text-gray-400 text-sm mr-2">Ibu:</span>
+                        <AncestorTreeDisplay node={node.parents.mother} />
+                    </div>
+                )}
+            </div>
+        )}
+    </div>
+);
+
 
 export const FamilyTreeView: React.FC = () => {
-    const svgRef = useRef<SVGSVGElement>(null);
-    const { data } = useFamily();
+    const { id } = useParams<{ id: string }>();
+    const { data: familyData, loading, error } = useFamily();
     const navigate = useNavigate();
     const [viewType, setViewType] = useState<'descendants' | 'ancestors'>('descendants');
-    const [rootId, setRootId] = useState(data.rootIndividualId);
+    const [rootId, setRootId] = useState<string | null>(id || (familyData.individuals.size > 0 ? Array.from(familyData.individuals.keys())[0] : null));
 
-    const individualList = Array.from(data.individuals.values());
+    const individualList = useMemo(() => Array.from(familyData.individuals.values()), [familyData.individuals]);
 
     useEffect(() => {
-        if (!data.individuals.size || !svgRef.current) return;
+        if (id && familyData.individuals.has(id)) {
+            if (rootId !== id) setRootId(id);
+        } else if (familyData.individuals.size > 0 && !rootId) {
+            setRootId(Array.from(familyData.individuals.keys())[0]);
+        } else if (!id && familyData.individuals.size === 0 && rootId) {
+            setRootId(null);
+        }
+    }, [id, familyData.individuals, rootId]);
 
-        let hierarchyData: any = null;
-        if (viewType === 'descendants') {
-            hierarchyData = buildHierarchy(rootId, data.individuals, data.families);
-        } else {
-            // Ancestor logic
-            const buildAncestorTree = (personId: string): any => {
-                const person = data.individuals.get(personId);
-                if (!person) return null;
-                const node: any = { ...person, children: [] };
-                const parentFamily = person.childInFamilyId ? data.families.get(person.childInFamilyId) : undefined;
-                if (parentFamily) {
-                    if (parentFamily.spouse1Id) {
-                        const father = buildAncestorTree(parentFamily.spouse1Id);
-                        if(father) node.children.push(father);
-                    }
-                    if (parentFamily.spouse2Id) {
-                        const mother = buildAncestorTree(parentFamily.spouse2Id);
-                        if(mother) node.children.push(mother);
-                    }
-                }
-                return node;
-            };
-            hierarchyData = buildAncestorTree(rootId);
+
+    const individual = useMemo(() => rootId ? familyData.individuals.get(rootId) : undefined, [rootId, familyData.individuals]);
+
+    const buildDescendantTree = useCallback((personId: string, visited = new Set<string>()): TreeNode | null => {
+        console.log(`[DEBUG: DescendantTree] Membangun dari: ${personId}`);
+        if (visited.has(personId)) {
+            console.log(`[DEBUG: DescendantTree] Sudah dikunjungi: ${personId}`);
+            return null;
+        }
+        visited.add(personId);
+
+        const person = familyData.individuals.get(personId);
+        if (!person) {
+            console.log(`[DEBUG: DescendantTree] Individu tidak ditemukan: ${personId}`);
+            return null;
         }
 
-        if (!hierarchyData) return;
+        const node: TreeNode = {
+            id: person.id,
+            name: person.name,
+            children: []
+        };
 
-        const width = 1200;
-        const nodeWidth = 220, nodeHeight = 100, nodeSeparation = 40;
+        const familiesAsSpouse = Array.from(familyData.families.values()).filter(
+            f => f.spouse1_id === personId || f.spouse2_id === personId
+        );
+        console.log(`[DEBUG: DescendantTree] Keluarga sebagai pasangan untuk ${person.name}:`, familiesAsSpouse.length);
 
-        const root = d3.hierarchy(hierarchyData);
-        const treeLayout = d3.tree().nodeSize([nodeWidth + nodeSeparation, nodeHeight * 2]);
-        treeLayout(root);
-        
-        let minX = Infinity, maxX = -Infinity;
-        root.each((d: d3.HierarchyNode<Individual>) => {
-            if(d.x !== undefined && d.x < minX) minX = d.x;
-            if(d.x !== undefined && d.x > maxX) maxX = d.x;
-        });
+        for (const family of familiesAsSpouse) {
+            console.log(`[DEBUG: DescendantTree] Memeriksa anak-anak keluarga: ${family.id}, children_ids:`, family.children_ids, `(typeof: ${typeof family.children_ids})`);
+            if (Array.isArray(family.children_ids)) {
+                for (const childId of family.children_ids) {
+                    console.log(`[DEBUG: DescendantTree] Mencoba membangun anak: ${childId}`);
+                    const childNode = buildDescendantTree(childId, new Set(visited));
+                    if (childNode) {
+                        node.children!.push(childNode);
+                    }
+                }
+            } else if (family.children_ids) {
+                 console.warn(`[WARN: DescendantTree] children_ids bukan array untuk family ${family.id}:`, family.children_ids);
+            }
+        }
+        return node;
+    }, [familyData.individuals, familyData.families]);
 
-        const height = maxX - minX + nodeHeight * 2;
-        
-        const svg = d3.select(svgRef.current)
-            .attr("viewBox", [-width/2, minX - nodeHeight, width, height])
-            .html(""); // Clear previous render
+    const buildAncestorTree = useCallback((personId: string, visited = new Set<string>()): AncestorNode | null => {
+        console.log(`[DEBUG: AncestorTree] Membangun dari: ${personId}`);
+        if (visited.has(personId)) {
+            console.log(`[DEBUG: AncestorTree] Sudah dikunjungi: ${personId}`);
+            return null;
+        }
+        visited.add(personId);
 
-        const g = svg.append("g");
+        const person = familyData.individuals.get(personId);
+        if (!person) {
+            console.log(`[DEBUG: AncestorTree] Individu tidak ditemukan: ${personId}`);
+            return null;
+        }
 
-        // Links
-        g.append("g")
-            .attr("fill", "none")
-            .attr("stroke", "#4b5563") // base-300
-            .attr("stroke-width", 1.5)
-            .selectAll("path")
-            .data(root.links())
-            .join("path")
-            .attr("d", d3.linkVertical()
-                .x((d: any) => d.x)
-                .y((d: any) => d.y)
-            );
+        const node: AncestorNode = {
+            id: person.id,
+            name: person.name,
+        };
 
-        // Nodes
-        const node = g.append("g")
-            .selectAll("g")
-            .data(root.descendants())
-            .join("g")
-            .attr("transform", (d: any) => `translate(${d.x},${d.y})`)
-            .on("click", (event: any, d: any) => navigate(`/individual/${d.data.id}`))
-            .style("cursor", "pointer");
+        console.log(`[DEBUG: AncestorTree] Memeriksa child_in_family_id untuk ${person.name}:`, person.child_in_family_id);
+        if (person.child_in_family_id) {
+            const parentFamily = familyData.families.get(person.child_in_family_id);
+            if (parentFamily) {
+                console.log(`[DEBUG: AncestorTree] Keluarga orang tua ditemukan: ${parentFamily.id}`);
+                if (parentFamily.spouse1_id && !visited.has(parentFamily.spouse1_id)) {
+                    console.log(`[DEBUG: AncestorTree] Mencoba membangun Ayah: ${parentFamily.spouse1_id}`);
+                    const father = buildAncestorTree(parentFamily.spouse1_id, new Set(visited));
+                    if (father) node.parents = { ...node.parents, father };
+                }
+                if (parentFamily.spouse2_id && !visited.has(parentFamily.spouse2_id)) {
+                    console.log(`[DEBUG: AncestorTree] Mencoba membangun Ibu: ${parentFamily.spouse2_id}`);
+                    const mother = buildAncestorTree(parentFamily.spouse2_id, new Set(visited));
+                    if (mother) node.parents = { ...node.parents, mother };
+                }
+            } else {
+                 console.log(`[DEBUG: AncestorTree] Keluarga orang tua ${person.child_in_family_id} tidak ditemukan.`);
+            }
+        } else {
+             console.log(`[DEBUG: AncestorTree] ${person.name} tidak punya child_in_family_id.`);
+        }
+        return node;
+    }, [familyData.individuals, familyData.families]);
 
-        node.append("rect")
-            .attr("width", nodeWidth)
-            .attr("height", nodeHeight)
-            .attr("x", -nodeWidth / 2)
-            .attr("y", -nodeHeight / 2)
-            .attr("rx", 8)
-            .attr("fill", (d: d3.HierarchyNode<Individual>) => d.data.gender === Gender.Male ? "#1e3a8a" : (d.data.gender === Gender.Female ? "#9d174d" : "#4b5563")) // blue, pink, gray
-            .attr("stroke", "#3b82f6") // accent
-            .attr("stroke-width", 2);
 
-        node.append("image")
-            .attr("xlink:href", (d: d3.HierarchyNode<Individual>) => d.data.photoUrl || 'https://picsum.photos/seed/person/50/50')
-            .attr("x", -nodeWidth/2 + 10)
-            .attr("y", -nodeHeight/2 + 15)
-            .attr("width", 50)
-            .attr("height", 50)
-            .attr("clip-path", "circle(25px at center)");
-        
-        node.append("text")
-            .attr("x", 0)
-            .attr("y", -nodeHeight/2 + 30)
-            .attr("dy", "0.31em")
-            .attr("fill", "white")
-            .style("font-size", "14px")
-            .style("font-weight", "bold")
-            .text((d: d3.HierarchyNode<Individual>) => d.data.name);
+    const descendantTree = useMemo(() => {
+        if (individual && viewType === 'descendants') {
+            return buildDescendantTree(individual.id);
+        }
+        return null;
+    }, [individual, viewType, buildDescendantTree]);
 
-        node.append("text")
-            .attr("x", 0)
-            .attr("y", -nodeHeight/2 + 50)
-            .attr("dy", "0.31em")
-            .attr("fill", "lightgray")
-            .style("font-size", "12px")
-            .text((d: d3.HierarchyNode<Individual>) => `${d.data.birth?.date || ''} - ${d.data.death?.date || ''}`);
+    const ancestorTree = useMemo(() => {
+        if (individual && viewType === 'ancestors') {
+            return buildAncestorTree(individual.id);
+        }
+        return null;
+    }, [individual, viewType, buildAncestorTree]);
 
-        // Zoom/Pan
-        const zoom = d3.zoom()
-            .scaleExtent([0.3, 3])
-            .on("zoom", (event: any) => {
-                g.attr("transform", event.transform);
-            });
 
-        svg.call(zoom);
+    if (loading) return <div className="text-center p-8 text-white">Memuat data silsilah...</div>;
+    if (error) return <div className="text-center p-8 text-error">Error: {error}</div>;
+    if (!individual && individualList.length === 0) return <div className="text-center p-8 text-xl text-gray-400">Tidak ada individu yang tercatat.</div>;
+    if (!individual && individualList.length > 0) return <div className="text-center p-8 text-xl text-gray-400">Pilih individu dari daftar di atas.</div>;
 
-    }, [data, rootId, viewType, navigate]);
 
     return (
-        <div className="w-full h-[calc(100vh-64px)] bg-base-100 flex flex-col">
-            <div className="p-4 bg-base-200 shadow-md z-10 flex items-center space-x-4">
-                 <select value={rootId} onChange={e => setRootId(e.target.value)} className="bg-base-300 border border-gray-600 rounded-md p-2 text-white">
+        <div className="container mx-auto p-4 md:p-8 bg-base-200 rounded-lg shadow-xl">
+            <h1 className="text-3xl font-bold text-white mb-6">Pohon Keluarga: {individual?.name}</h1>
+
+            <div className="mb-6 flex justify-center space-x-4">
+                <select value={rootId || ''} onChange={e => setRootId(e.target.value)} className="bg-base-300 border border-gray-600 rounded-md p-2 text-white">
+                    <option value="">Pilih Individu Utama</option>
                     {individualList.map(ind => <option key={ind.id} value={ind.id}>{ind.name}</option>)}
                  </select>
-                 <select value={viewType} onChange={e => setViewType(e.target.value as 'descendants' | 'ancestors')} className="bg-base-300 border border-gray-600 rounded-md p-2 text-white">
-                    <option value="descendants">Keturunan</option>
-                    <option value="ancestors">Leluhur</option>
-                </select>
-                <span className="text-gray-400 text-sm hidden md:block">Gunakan mouse untuk zoom dan geser.</span>
+                <button
+                    onClick={() => setViewType('descendants')}
+                    className={`px-6 py-2 rounded-lg font-semibold transition-colors ${viewType === 'descendants' ? 'bg-accent text-white' : 'bg-base-300 text-gray-300 hover:bg-base-100'}`}
+                >
+                    Keturunan
+                </button>
+                <button
+                    onClick={() => setViewType('ancestors')}
+                    className={`px-6 py-2 rounded-lg font-semibold transition-colors ${viewType === 'ancestors' ? 'bg-accent text-white' : 'bg-base-300 text-gray-300 hover:bg-base-100'}`}
+                >
+                    Leluhur
+                </button>
             </div>
-            <div className="flex-grow w-full h-full overflow-hidden">
-                <svg ref={svgRef}></svg>
+
+            <div className="bg-base-100 p-6 rounded-lg min-h-[300px] flex flex-col items-center justify-center">
+                {viewType === 'descendants' && (
+                    descendantTree && descendantTree.children && descendantTree.children.length > 0 ? (
+                        <div className="w-full">
+                            <h2 className="text-xl font-semibold text-white mb-4">Pohon Keturunan</h2>
+                            <DescendantTreeDisplay node={descendantTree} />
+                        </div>
+                    ) : (
+                        <p className="text-gray-400">Tidak ada keturunan yang tercatat untuk {individual?.name}.</p>
+                    )
+                )}
+
+                {viewType === 'ancestors' && (
+                    ancestorTree && (ancestorTree.parents?.father || ancestorTree.parents?.mother) ? (
+                        <div className="w-full">
+                            <h2 className="text-xl font-semibold text-white mb-4">Pohon Leluhur</h2>
+                            <AncestorTreeDisplay node={ancestorTree} />
+                        </div>
+                    ) : (
+                        <p className="text-gray-400">Tidak ada leluhur yang tercatat untuk {individual?.name}.</p>
+                    )
+                )}
             </div>
         </div>
     );

@@ -48,11 +48,9 @@ const convertSupabaseFamilyToForm = (supabaseData: Tables<'families'>['Row']): F
 
 // Helper: Mengonversi data dari format Form (camelCase, bersarang) ke format Supabase (snake_case, datar)
 const convertFormFamilyToSupabase = (formData: FormFamily): SupabaseFamilyInsert | SupabaseFamilyUpdate => {
-  // === Ini adalah bagian krusial untuk memastikan hanya kolom Supabase yang dikirim ===
   const supabaseData: SupabaseFamilyInsert | SupabaseFamilyUpdate = {
     spouse1_id: formData.spouse1Id === '' ? null : formData.spouse1Id,
     spouse2_id: formData.spouse2Id === '' ? null : formData.spouse2Id,
-    // PERBAIKAN KRUSIAL DI SINI: Pastikan children_ids dikirim sebagai array atau null
     children_ids: formData.childrenIds && formData.childrenIds.length > 0 ? formData.childrenIds : null,
     marriage_date: formData.marriage?.date === '' ? null : formData.marriage?.date,
     marriage_place: formData.marriage?.place === '' ? null : formData.marriage?.place,
@@ -60,7 +58,6 @@ const convertFormFamilyToSupabase = (formData: FormFamily): SupabaseFamilyInsert
     divorce_place: formData.divorce?.place === '' ? null : formData.divorce?.place,
   };
 
-  // Tambahkan ID hanya jika ini adalah update
   if ('id' in formData && formData.id) {
     (supabaseData as SupabaseFamilyUpdate).id = formData.id;
   }
