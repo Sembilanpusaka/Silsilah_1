@@ -2,6 +2,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useFamily } from '../hooks/useFamilyData';
+import { D3FamilyTreeVisualization } from './D3FamilyTreeVisualization'; // <--- Impor komponen baru
 import { Tables } from '../types/supabase';
 
 // Asumsi DetailEntry dan LifeFactEntry didefinisikan secara global atau di types.ts
@@ -59,25 +60,21 @@ const FamilyMemberLink: React.FC<{ individual?: Individual | null, relationship?
     );
 };
 
-// Pastikan DescendantTreeDisplay didefinisikan di sini atau diimpor jika ini file terpisah
-const DescendantTreeDisplay: React.FC<{ descendants: (Individual & { children?: any[] })[] }> = ({ descendants }) => {
-    if (descendants.length === 0) return null;
-    return (
-        <ul className="pl-6 border-l border-base-300 space-y-2">
-            {descendants.map(desc => (
-                <li key={desc.id}>
-                    <FamilyMemberLink individual={useMemo(() => ({
-                        id: desc.id, name: desc.name, photo_url: desc.photo_url, gender: desc.gender,
-                        birth_date: desc.birth_date, birth_place: desc.birth_place, death_date: desc.death_date, death_place: desc.death_place,
-                        description: desc.description, profession: desc.profession, notes: desc.notes, child_in_family_id: desc.child_in_family_id,
-                        education: desc.education, works: desc.works, sources: desc.sources, related_references: desc.related_references, life_events_facts: desc.life_events_facts
-                    }), [desc])} relationship="Keturunan" />
-                    {desc.children && <DescendantTreeDisplay descendants={desc.children} />}
-                </li>
-            ))}
-        </ul>
-    );
-};
+// --- HAPUS KOMPONEN DESCENDANTTREEDISPLAY INI DARI SINI ---
+// const DescendantTreeDisplay: React.FC<{ descendants: (Individual & { children?: any[] })[] }> = ({ descendants }) => {
+//     if (descendants.length === 0) return null;
+//     return (
+//         <ul className="pl-6 border-l border-base-300 space-y-2">
+//             {descendants.map(desc => (
+//                 <li key={desc.id}>
+//                     <FamilyMemberLink individual={useMemo(() => ({ /* ... */ }), [desc])} relationship="Keturunan" />
+//                     {desc.children && <DescendantTreeDisplay descendants={desc.children} />}
+//                 </li>
+//             ))}
+//         </ul>
+//     );
+// };
+// -----------------------------------------------------------------
 
 
 const DetailSection: React.FC<{title: string, items?: DetailEntry[] | null}> = ({ title, items}) => {
@@ -132,6 +129,7 @@ const LifeFactsDisplaySection: React.FC<{title: string, items?: LifeFactEntry[] 
 export const IndividualProfile: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const { data } = useFamily();
+
     const [activeTab, setActiveTab] = useState('overview');
 
     const individual = useMemo(() => id ? data.individuals.get(id) : undefined, [id, data.individuals]);
@@ -152,6 +150,7 @@ export const IndividualProfile: React.FC = () => {
     }, [id, data.families]);
 
 
+    // Hapus getDescendants jika tidak digunakan lagi atau pindahkan ke D3FamilyTreeVisualization
     const getDescendants = useCallback((personId: string, visited = new Set<string>()): (Individual & { children?: any[] })[] => {
         if (visited.has(personId)) return [];
         visited.add(personId);
@@ -190,7 +189,7 @@ export const IndividualProfile: React.FC = () => {
             <div className="bg-base-200 shadow-xl rounded-lg overflow-hidden">
                 <div className="md:flex bg-base-300/30 p-8">
                     <div className="md:flex-shrink-0">
-                        <img className="h-48 w-48 rounded-full object-cover mx-auto ring-4 ring-primary" src={individual.photo_url || 'https://picsum.photos/seed/person/200/200'} alt={individual.name || 'Unknown'} />
+                        <img className="h-48 w-48 rounded-full object-cover mx-auto ring-4 ring-primary" src={individual.photo_url || 'https://picsum.photos/seed/person/200/200'} alt={individual.name || 'Unknown'} className="flex-shrink-0" />
                         <div className="flex items-center justify-center mt-4 space-x-2 text-gray-400">
                              {individual.gender === 'male' ? <MaleIcon className="w-6 h-6 text-blue-400" /> : <FemaleIcon className="w-6 h-6 text-pink-400" />}
                             <span>{individual.gender}</span>
@@ -276,10 +275,16 @@ export const IndividualProfile: React.FC = () => {
                     {activeTab === 'descendants' && (
                         <div>
                              <h2 className="text-2xl font-bold text-white mb-6">Pohon Keturunan</h2>
-                             {descendants.length > 0 ? (
-                                <DescendantTree descendants={descendants}/>
-                             ) : (
-                                <p className="text-gray-400">Tidak ada keturunan yang tercatat.</p>
+                             {/* <--- GUNAKAN D3FamilyTreeVisualization DI SINI ---> */}
+                             {individual && (
+                                <D3FamilyTreeVisualization
+                                    rootIndividualId={individual.id}
+                                    individuals={data.individuals}
+                                    families={data.families}
+                                    viewType="descendants"
+                                    width={800} // Atur lebar sesuai kebutuhan
+                                    height={500} // Atur tinggi sesuai kebutuhan
+                                />
                              )}
                         </div>
                     )}
