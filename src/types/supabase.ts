@@ -62,18 +62,21 @@ export type Database = {
       }
       guestbook_entries: {
         Row: {
+          comment: string | null
           created_at: string | null
           id: string
           message: string
           name: string
         }
         Insert: {
+          comment?: string | null
           created_at?: string | null
           id?: string
           message: string
           name: string
         }
         Update: {
+          comment?: string | null
           created_at?: string | null
           id?: string
           message?: string

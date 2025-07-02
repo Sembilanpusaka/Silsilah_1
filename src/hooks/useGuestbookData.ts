@@ -1,8 +1,9 @@
 // hooks/useGuestbookData.ts
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../supabaseClient'; // <--- Pastikan jalur relatif ini benar
+import { supabase } from '../supabaseClient';
 import { Tables } from '../types/supabase';
 
+// Perbarui tipe untuk menyertakan 'comment'
 type SupabaseGuestbookEntry = Tables<'guestbook_entries'>['Row'];
 type SupabaseGuestbookEntryInsert = Tables<'guestbook_entries'>['Insert'];
 
@@ -39,13 +40,14 @@ export const useGuestbookData = () => {
     useEffect(() => {
         fetchGuestbookEntries();
 
+        // Pastikan Realtime diaktifkan untuk tabel 'guestbook_entries' di dasbor Supabase
         const channel = supabase
             .channel('public:guestbook_entries')
             .on(
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'guestbook_entries' },
                 (payload) => {
-                  console.log('[DEBUG: Realtime] Perubahan guestbook diterima:', payload);
+                    console.log('[DEBUG: Realtime] Perubahan guestbook diterima:', payload);
                     fetchGuestbookEntries();
                 }
             )
@@ -57,12 +59,14 @@ export const useGuestbookData = () => {
         };
     }, [fetchGuestbookEntries]);
 
-    const addEntry = useCallback(async (name: string, message: string) => {
-        console.log("[DEBUG: addEntry] Data akan dikirim ke Supabase:", { name, message });
+    // Perbarui fungsi addEntry untuk menerima kolom 'comment'
+    const addEntry = useCallback(async (name: string, message: string, comment: string | null = null) => {
+        console.log("[DEBUG: addEntry] Data akan dikirim ke Supabase:", { name, message, comment });
         try {
             const newEntry: SupabaseGuestbookEntryInsert = {
                 name,
                 message,
+                comment: comment === '' ? null : comment, // Pastikan string kosong jadi null
             };
             const { data, error: supabaseError } = await supabase
                 .from('guestbook_entries')
@@ -74,12 +78,16 @@ export const useGuestbookData = () => {
                 throw supabaseError;
             }
             console.log("[DEBUG: addEntry] Entry berhasil ditambahkan ke Supabase:", data);
+            // Panggil fetchGuestbookEntries secara manual untuk update instan
+            // meskipun realtime sudah ada, ini sebagai jaminan update UI
+            await fetchGuestbookEntries();
         } catch (err: any) {
             console.error("[ERROR: addEntry] Gagal menambahkan entry guestbook:", err.message);
             setError(err.message);
         }
-    }, []);
+    }, [fetchGuestbookEntries]); // Tambahkan fetchGuestbookEntries ke dependensi
 
+    // Perbarui return agar fungsi addEntry menyertakan parameter baru
     return { entries, isLoaded, error, addEntry };
 };
 

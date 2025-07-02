@@ -1,24 +1,34 @@
-
+// Silsilah_1/src/components/GuestbookPage.tsx
 import React, { useState } from 'react';
 import { useGuestbook } from '../hooks/useGuestbookData';
+import { Tables } from '../types/supabase';
+type GuestbookEntry = Tables<'guestbook_entries'>['Row'];
+
 import { GuestbookIcon, UserIcon } from './Icons';
 
 export const GuestbookPage: React.FC = () => {
     const { entries, addEntry } = useGuestbook();
     const [name, setName] = useState('');
     const [message, setMessage] = useState('');
+    const [comment, setComment] = useState(''); // <--- Tambahkan state untuk komentar
     const [error, setError] = useState('');
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!name.trim() || !message.trim()) {
             setError('Nama dan pesan tidak boleh kosong.');
             return;
         }
-        addEntry(name, message);
-        setName('');
-        setMessage('');
-        setError('');
+        try {
+            // Panggil addEntry dengan parameter 'comment'
+            await addEntry(name, message, comment); // <--- Kirim komentar
+            setName('');
+            setMessage('');
+            setComment(''); // <--- Reset komentar setelah kirim
+            setError('');
+        } catch (err: any) {
+            setError(err.message || 'Gagal mengirim pesan.');
+        }
     };
 
     return (
@@ -40,6 +50,7 @@ export const GuestbookPage: React.FC = () => {
                             onChange={e => setName(e.target.value)}
                             className="w-full bg-base-300 border border-gray-600 rounded-md p-2 text-white"
                             placeholder="Contoh: John Doe"
+                            required // Tambahkan required
                         />
                     </div>
                      <div>
@@ -51,6 +62,19 @@ export const GuestbookPage: React.FC = () => {
                             rows={4}
                             className="w-full bg-base-300 border border-gray-600 rounded-md p-2 text-white"
                             placeholder="Tulis komentar Anda di sini..."
+                            required // Tambahkan required
+                        />
+                    </div>
+                    {/* Tambahkan input untuk komentar */}
+                    <div>
+                        <label htmlFor="comment" className="block text-sm font-medium text-gray-300 mb-1">Komentar (opsional)</label>
+                        <textarea
+                            id="comment"
+                            value={comment}
+                            onChange={e => setComment(e.target.value)}
+                            rows={2}
+                            className="w-full bg-base-300 border border-gray-600 rounded-md p-2 text-white"
+                            placeholder="Tambahkan komentar di sini..."
                         />
                     </div>
                     {error && <p className="text-error text-sm">{error}</p>}
@@ -73,10 +97,17 @@ export const GuestbookPage: React.FC = () => {
                                     <div className="flex justify-between items-center">
                                         <p className="font-bold text-white">{entry.name}</p>
                                         <p className="text-xs text-gray-500">
-                                            {new Date(entry.date).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
+                                            {new Date(entry.created_at!).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
                                         </p>
                                     </div>
                                     <p className="text-gray-300 mt-1 whitespace-pre-wrap">{entry.message}</p>
+                                    {/* Tampilkan kolom komentar jika ada */}
+                                    {entry.comment && (
+                                        <div className="mt-2 text-sm text-gray-400 border-t border-base-300 pt-2">
+                                            <p className="font-semibold">Komentar:</p>
+                                            <p className="whitespace-pre-wrap">{entry.comment}</p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))
