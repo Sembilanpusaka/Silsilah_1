@@ -1,6 +1,6 @@
-// Silsilah_1/src/components/AdminIndividualForm.tsx
 import React, { useState, useEffect } from 'react';
-import { Tables } from '../types/supabase'; // Pastikan path ini benar dan types sudah digenerate terbaru
+// Pastikan impor Tables dari supabase.ts
+import { Tables } from '../types/supabase';
 
 // Definisikan tipe FormIndividual yang sesuai dengan struktur form Anda
 interface FormIndividual {
@@ -18,13 +18,24 @@ interface FormIndividual {
   works: DetailEntry[] | null;
   sources: DetailEntry[] | null;
   references: DetailEntry[] | null; // references di form akan di-map ke related_references di Supabase
+  lifeFacts: LifeFactEntry[] | null; // <--- TAMBAHKAN INI
 }
 
-interface DetailEntry {
+interface DetailEntry { // Untuk Pendidikan, Karya, Sumber, Referensi (link & text)
   id: string;
   title: string;
   description: string;
   period: string;
+}
+
+interface LifeFactEntry { // <--- DEFINISI BARU: Untuk Fakta & Peristiwa (link & text)
+    id: string; // ID unik untuk React key
+    type: string; // Misalnya: "Lahir", "Sekolah", "Menikah", "Haji"
+    date: string | null;
+    place: string | null;
+    description: string | null;
+    source_link: string | null;
+    source_text: string | null;
 }
 
 // Gunakan tipe Supabase yang digenerate untuk memastikan nama kolom sesuai
@@ -52,6 +63,7 @@ const emptyIndividualForm: FormIndividual = {
   birth: { date: null, place: null }, death: { date: null, place: null },
   description: null, profession: null, notes: null, childInFamilyId: null,
   education: [], works: [], sources: [], references: [],
+  lifeFacts: [], // <--- INISIALISASI
 };
 
 // Helper: Mengonversi data dari format Supabase (snake_case, datar) ke format Form (camelCase, bersarang)
@@ -60,34 +72,33 @@ const convertSupabaseToForm = (supabaseData: Tables<'individuals'>['Row']): Form
     id: supabaseData.id,
     name: supabaseData.name,
     gender: supabaseData.gender,
-    photoUrl: supabaseData.photo_url, // snake_case ke camelCase
+    photoUrl: supabaseData.photo_url,
     birth: {
-      date: supabaseData.birth_date, // snake_case ke nested object
+      date: supabaseData.birth_date,
       place: supabaseData.birth_place
     },
     death: {
-      date: supabaseData.death_date, // snake_case ke nested object
+      date: supabaseData.death_date,
       place: supabaseData.death_place
     },
     description: supabaseData.description,
     profession: supabaseData.profession,
     notes: supabaseData.notes,
-    childInFamilyId: supabaseData.child_in_family_id, // snake_case ke camelCase
-    // JSONB columns: pastikan di-parse jika perlu, dan default ke array kosong
+    childInFamilyId: supabaseData.child_in_family_id,
     education: supabaseData.education ? (supabaseData.education as DetailEntry[]) : [],
     works: supabaseData.works ? (supabaseData.works as DetailEntry[]) : [],
     sources: supabaseData.sources ? (supabaseData.sources as DetailEntry[]) : [],
-    references: supabaseData.related_references ? (supabaseData.related_references as DetailEntry[]) : [], // snake_case ke camelCase
+    references: supabaseData.related_references ? (supabaseData.related_references as DetailEntry[]) : [],
+    lifeFacts: supabaseData.life_events_facts ? (supabaseData.life_events_facts as LifeFactEntry[]) : [], // <--- TAMBAHKAN INI
   };
 };
 
 // Helper: Mengonversi data dari format Form (camelCase, bersarang) ke format Supabase (snake_case, datar)
 const convertFormToSupabase = (formData: FormIndividual): SupabaseIndividualInsert | SupabaseIndividualUpdate => {
-  // === Bagian ini yang krusial untuk memastikan hanya kolom Supabase yang dikirim ===
   const supabaseData: SupabaseIndividualInsert | SupabaseIndividualUpdate = {
     name: formData.name,
     gender: formData.gender,
-    photo_url: formData.photoUrl === '' ? null : formData.photoUrl, // Pastikan string kosong jadi null
+    photo_url: formData.photoUrl === '' ? null : formData.photoUrl,
     birth_date: formData.birth?.date === '' ? null : formData.birth?.date,
     birth_place: formData.birth?.place === '' ? null : formData.birth?.place,
     death_date: formData.death?.date === '' ? null : formData.death?.date,
@@ -96,14 +107,13 @@ const convertFormToSupabase = (formData: FormIndividual): SupabaseIndividualInse
     profession: formData.profession === '' ? null : formData.profession,
     notes: formData.notes === '' ? null : formData.notes,
     child_in_family_id: formData.childInFamilyId === '' ? null : formData.childInFamilyId,
-    // JSONB columns: pastikan menjadi Json (array) atau null jika kosong
     education: formData.education && formData.education.length > 0 ? formData.education as any : null,
     works: formData.works && formData.works.length > 0 ? formData.works as any : null,
     sources: formData.sources && formData.sources.length > 0 ? formData.sources as any : null,
     related_references: formData.references && formData.references.length > 0 ? formData.references as any : null,
+    life_events_facts: formData.lifeFacts && formData.lifeFacts.length > 0 ? formData.lifeFacts as any : null, // <--- TAMBAHKAN INI
   };
 
-  // Tambahkan ID hanya jika ini adalah update
   if ('id' in formData && formData.id) {
     (supabaseData as SupabaseIndividualUpdate).id = formData.id;
   }
@@ -156,6 +166,68 @@ const DetailEntrySection: React.FC<{
 };
 
 
+// --- Komponen BARU untuk Fakta dan Peristiwa Kehidupan ---
+const LifeFactSection: React.FC<{
+  title: string;
+  entries: LifeFactEntry[];
+  updateEntries: (entries: LifeFactEntry[]) => void;
+}> = ({ title, entries, updateEntries }) => {
+
+  const addEntry = () => {
+    const newEntry: LifeFactEntry = {
+        id: `fact-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        type: '', date: null, place: null, description: null, source_link: null, source_text: null
+    };
+    updateEntries([...entries, newEntry]);
+  };
+
+  const removeEntry = (id: string) => {
+    updateEntries(entries.filter(entry => entry.id !== id));
+  };
+
+  const handleEntryChange = (id: string, field: keyof LifeFactEntry, value: string | null) => {
+      const updatedEntries = entries.map(entry =>
+        entry.id === id ? { ...entry, [field]: value === '' ? null : value } : entry
+      );
+      updateEntries(updatedEntries);
+  };
+
+  return (
+    <fieldset className="border border-base-300 p-4 rounded-md space-y-4">
+      <legend className="px-2 font-semibold text-gray-300">{title}</legend>
+      {entries.map((entry, index) => (
+        <div key={entry.id} className="grid grid-cols-1 md:grid-cols-2 gap-2 p-2 bg-base-100/50 rounded">
+            <div>
+                <input type="text" placeholder="Jenis Fakta (e.g., Sekolah, Haji)" value={entry.type || ''} onChange={e => handleEntryChange(entry.id, 'type', e.target.value)} className="w-full bg-base-300 p-2 rounded-md" />
+            </div>
+            <div>
+                <input type="text" placeholder="Tanggal (e.g., 2005)" value={entry.date || ''} onChange={e => handleEntryChange(entry.id, 'date', e.target.value)} className="w-full bg-base-300 p-2 rounded-md" />
+            </div>
+            <div>
+                <input type="text" placeholder="Tempat (opsional)" value={entry.place || ''} onChange={e => handleEntryChange(entry.id, 'place', e.target.value)} className="w-full bg-base-300 p-2 rounded-md" />
+            </div>
+            <div>
+                <input type="text" placeholder="Deskripsi/Detail" value={entry.description || ''} onChange={e => handleEntryChange(entry.id, 'description', e.target.value)} className="w-full bg-base-300 p-2 rounded-md" />
+            </div>
+            <div>
+                <input type="text" placeholder="Link Sumber (URL)" value={entry.source_link || ''} onChange={e => handleEntryChange(entry.id, 'source_link', e.target.value)} className="w-full bg-base-300 p-2 rounded-md" />
+            </div>
+            <div className="flex items-center gap-2">
+                <input type="text" placeholder="Teks Sumber" value={entry.source_text || ''} onChange={e => handleEntryChange(entry.id, 'source_text', e.target.value)} className="w-full bg-base-300 p-2 rounded-md" />
+                <button type="button" onClick={() => removeEntry(entry.id)} className="p-2 text-error hover:text-red-400">
+                    <DeleteIcon className="w-5 h-5"/>
+                </button>
+            </div>
+        </div>
+      ))}
+      <button type="button" onClick={addEntry} className="flex items-center text-sm bg-accent/20 hover:bg-accent/40 text-accent font-semibold py-1 px-3 rounded-md">
+        <PlusIcon className="w-4 h-4 mr-1"/> Tambah {title}
+      </button>
+    </fieldset>
+  );
+};
+
+
 export const AdminIndividualForm: React.FC<AdminIndividualFormProps> = ({ onSave, onClose, initialData }) => {
   const [formData, setFormData] = useState<FormIndividual>(
     initialData ? convertSupabaseToForm(initialData) : emptyIndividualForm
@@ -168,7 +240,7 @@ export const AdminIndividualForm: React.FC<AdminIndividualFormProps> = ({ onSave
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value === '' ? null : value })); // Pastikan string kosong jadi null
+    setFormData(prev => ({ ...prev, [name]: value === '' ? null : value }));
   };
 
   const handleEventChange = (e: React.ChangeEvent<HTMLInputElement>, eventType: 'birth' | 'death', field: 'date' | 'place') => {
@@ -177,7 +249,7 @@ export const AdminIndividualForm: React.FC<AdminIndividualFormProps> = ({ onSave
           ...prev,
           [eventType]: {
               ...(prev[eventType] || {}),
-              [field]: value === '' ? null : value // Pastikan string kosong jadi null
+              [field]: value === '' ? null : value
           }
       }));
   };
@@ -258,6 +330,9 @@ export const AdminIndividualForm: React.FC<AdminIndividualFormProps> = ({ onSave
       <DetailEntrySection title="Karya" entries={formData.works || []} updateEntries={(e) => setFormData(prev => ({...prev, works: e}))} />
       <DetailEntrySection title="Sumber" entries={formData.sources || []} updateEntries={(e) => setFormData(prev => ({...prev, sources: e}))} />
       <DetailEntrySection title="Referensi" entries={formData.references || []} updateEntries={(e) => setFormData(prev => ({...prev, references: e}))} />
+
+      {/* <--- TAMBAHKAN BAGIAN INI UNTUK FAKTA DAN PERISTIWA KEHIDUPAN --- */}
+      <LifeFactSection title="Fakta & Peristiwa Kehidupan" entries={formData.lifeFacts || []} updateEntries={(e) => setFormData(prev => ({...prev, lifeFacts: e}))} />
 
 
       <div className="flex justify-end space-x-4 pt-4">

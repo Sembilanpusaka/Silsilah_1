@@ -96,6 +96,7 @@ export type Database = {
           education: Json | null
           gender: Database["public"]["Enums"]["gender_enum"]
           id: string
+          life_events_facts: Json | null
           name: string
           notes: string | null
           photo_url: string | null
@@ -115,6 +116,7 @@ export type Database = {
           education?: Json | null
           gender: Database["public"]["Enums"]["gender_enum"]
           id?: string
+          life_events_facts?: Json | null
           name: string
           notes?: string | null
           photo_url?: string | null
@@ -134,6 +136,7 @@ export type Database = {
           education?: Json | null
           gender?: Database["public"]["Enums"]["gender_enum"]
           id?: string
+          life_events_facts?: Json | null
           name?: string
           notes?: string | null
           photo_url?: string | null
