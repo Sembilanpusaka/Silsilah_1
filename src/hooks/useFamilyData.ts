@@ -6,7 +6,7 @@ import { Tables } from '../types/supabase';
 type Individual = Tables<'individuals'>['Row'];
 type Family = Tables<'families'>['Row'];
 
-export const useFamilyData = () => { // <--- Ini adalah hook utama
+export const useFamilyData = () => {
   const [individuals, setIndividuals] = useState<Map<string, Individual>>(new Map());
   const [families, setFamilies] = useState<Map<string, Family>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -262,8 +262,7 @@ export const useFamilyData = () => { // <--- Ini adalah hook utama
   }, []);
 
 
-  // Mengembalikan objek data dengan individuals dan families
-  return {
+  return useMemo(() => ({
     data: { individuals, families },
     loading,
     error,
@@ -274,7 +273,11 @@ export const useFamilyData = () => { // <--- Ini adalah hook utama
     addFamily,
     updateFamily,
     deleteFamily,
-  };
+  }), [
+    individuals, families, loading, error, fetchFamilyData,
+    addIndividual, updateIndividual, deleteIndividual,
+    addFamily, updateFamily, deleteFamily,
+  ]);
 };
 
 // --- DEFINISI KONTEKS & HOOK useFamily ---

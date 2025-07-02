@@ -35,7 +35,7 @@ export const InteractiveRelationshipFinder: React.FC = () => {
         const endPerson = familyData.individuals.get(endId);
 
         if (!startPerson || !endPerson) {
-            console.log("[DEBUG: findRelationshipPath] Start or end person not found in data."); // DEBUG
+            console.log("[DEBUG: findRelationshipPath] Start or end person not found in data.");
             return null;
         }
 
@@ -65,7 +65,7 @@ export const InteractiveRelationshipFinder: React.FC = () => {
             );
             console.log(`[DEBUG: findRelationshipPath] Keluarga sebagai pasangan untuk ${currentPerson.name}:`, familiesAsSpouse.length);
             for (const family of familiesAsSpouse) {
-                if (Array.isArray(family.children_ids)) { // Pastikan ini array
+                if (Array.isArray(family.children_ids)) {
                     for (const childId of family.children_ids) {
                         if (!visited.has(childId)) {
                             const child = familyData.individuals.get(childId);

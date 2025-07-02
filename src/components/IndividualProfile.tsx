@@ -189,7 +189,8 @@ export const IndividualProfile: React.FC = () => {
             <div className="bg-base-200 shadow-xl rounded-lg overflow-hidden">
                 <div className="md:flex bg-base-300/30 p-8">
                     <div className="md:flex-shrink-0">
-                        <img className="h-48 w-48 rounded-full object-cover mx-auto ring-4 ring-primary" src={individual.photo_url || 'https://picsum.photos/seed/person/200/200'} alt={individual.name || 'Unknown'} className="flex-shrink-0" />
+                        {/* PERBAIKAN DI SINI: Gabungkan kedua atribut className */}
+                        <img className="h-48 w-48 rounded-full object-cover mx-auto ring-4 ring-primary flex-shrink-0" src={individual.photo_url || 'https://picsum.photos/seed/person/200/200'} alt={individual.name || 'Unknown'} />
                         <div className="flex items-center justify-center mt-4 space-x-2 text-gray-400">
                              {individual.gender === 'male' ? <MaleIcon className="w-6 h-6 text-blue-400" /> : <FemaleIcon className="w-6 h-6 text-pink-400" />}
                             <span>{individual.gender}</span>
