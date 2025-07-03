@@ -1,7 +1,7 @@
 // Silsilah_1/src/components/AdminFamilyForm.tsx
 import React, { useState, useEffect } from 'react';
 import { useFamily } from '../hooks/useFamilyData';
-import { Tables } from '../types/supabase'; // Pastikan ini diimpor dengan benar
+import { Tables } from '../types/supabase'; // <--- PASTIKAN IMPOR INI BENAR
 
 // Definisikan tipe FormFamily yang sesuai dengan struktur form Anda
 interface FormFamily {
@@ -18,7 +18,7 @@ type SupabaseFamilyInsert = Tables<'families'>['Insert'];
 type SupabaseFamilyUpdate = Tables<'families'>['Update'];
 
 interface AdminFamilyFormProps {
-  onSave: (family: SupabaseFamilyInsert | SupabaseFamilyUpdate) => void;
+  onSave: (family: SupabaseFamilyInsert | SupabaseFamilyUpdate) => void; // Perbaiki tipe onSave
   onClose: () => void;
   initialData?: Tables<'families'>['Row'] | null; // initialData datang dari Supabase (snake_case)
 }
@@ -65,7 +65,7 @@ const convertFormFamilyToSupabase = (formData: FormFamily): SupabaseFamilyInsert
 };
 
 
-export const AdminFamilyForm: React.FC<AdminFamilyFormProps> = ({ onSave, onClose, initialData }) => {
+export const AdminFamilyForm: React.FC<AdminFamilyFormProps> = ({ onSave, onClose, initialData }) => { // <--- PASTIKAN EKSPOR INI BENAR
   const [formData, setFormData] = useState<FormFamily>(
     initialData ? convertSupabaseFamilyToForm(initialData) : emptyFamilyForm
   );

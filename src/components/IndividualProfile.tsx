@@ -2,8 +2,9 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useFamily } from '../hooks/useFamilyData';
-import { D3FamilyTreeVisualization } from './D3FamilyTreeVisualization'; // <--- Impor komponen baru
+// HAPUS IMPOR INI: import { D3FamilyTreeVisualization } from './D3FamilyTreeVisualization';
 import { Tables } from '../types/supabase';
+import { getJavaneseRelationship } from '../utils/javaneseTerms';
 
 interface DetailEntry {
     id: string;
@@ -53,13 +54,28 @@ const FamilyMemberLink: React.FC<{ individual?: Individual | null, relationship?
             <img src={individual.photo_url || 'https://picsum.photos/seed/person/50/50'} alt={individual.name || 'Unknown'} className="w-10 h-10 rounded-full object-cover" />
             <div>
                 <p className="font-semibold text-white">{individual.name}</p>
-                {relationship && <p className="text-sm text-gray-400">{relationship}</p>}
+                {relationship && <p className="text-sm text-gray-400">{getJavaneseRelationship(relationship)}</p>}
             </div>
         </Link>
     );
 };
 
-// Hapus definisi DescendantTreeDisplay dari sini, karena sekarang menggunakan D3FamilyTreeVisualization
+// --- KEMBALIKAN DEFINISI KOMPONEN DESCENDANTTREEDISPLAY INI ---
+const DescendantTreeDisplay: React.FC<{ descendants: (Individual & { children?: any[] })[] }> = ({ descendants }) => {
+    if (descendants.length === 0) return null;
+    return (
+        <ul className="pl-6 border-l border-base-300 space-y-2">
+            {descendants.map(desc => (
+                <li key={desc.id}>
+                    <FamilyMemberLink individual={desc} relationship="Keturunan" /> {/* Perhatikan: Mengirim objek `desc` langsung */}
+                    {desc.children && <DescendantTreeDisplay descendants={desc.children} />}
+                </li>
+            ))}
+        </ul>
+    );
+};
+// -----------------------------------------------------------------
+
 
 const DetailSection: React.FC<{title: string, items?: DetailEntry[] | null}> = ({ title, items}) => {
     if (!items || items.length === 0) return null;
@@ -108,8 +124,6 @@ const LifeFactsDisplaySection: React.FC<{title: string, items?: LifeFactEntry[] 
 };
 
 
-// --- Komponen Utama IndividualProfile ---
-
 export const IndividualProfile: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const { data } = useFamily();
@@ -134,8 +148,8 @@ export const IndividualProfile: React.FC = () => {
     }, [id, data.families]);
 
 
-    // Hapus getDescendants jika tidak digunakan lagi atau pindahkan ke D3FamilyTreeVisualization
-    const getDescendants = useCallback((personId: string, visited = new Set<string>()): (Individual & { children?: any[] })[] => {
+    // --- KEMBALIKAN DEFINISI FUNGSI getDescendants INI ---
+    const getDescendants = useCallback((personId: string, data: { individuals: Map<string, Individual>, families: Map<string, Family> }, visited = new Set<string>()): (Individual & { children?: any[] })[] => {
         if (visited.has(personId)) return [];
         visited.add(personId);
 
@@ -148,7 +162,7 @@ export const IndividualProfile: React.FC = () => {
                 if (child) {
                     descendantsList.push({
                         ...child,
-                        children: getDescendants(child.id, new Set(visited))
+                        children: getDescendants(child.id, data, new Set(visited))
                     });
                 }
             }
@@ -156,7 +170,8 @@ export const IndividualProfile: React.FC = () => {
         return descendantsList;
     }, [data.individuals, data.families]);
 
-    const descendants = useMemo(() => getDescendants(individual.id), [individual.id, getDescendants]);
+    const descendants = useMemo(() => getDescendants(individual.id, data), [individual.id, data, getDescendants]); // Baris ini juga akan dikembalikan
+    // ----------------------------------------------------
 
 
     const TabButton: React.FC<{tabName: string; label: string}> = ({tabName, label}) => (
@@ -260,15 +275,11 @@ export const IndividualProfile: React.FC = () => {
                         <div>
                              <h2 className="text-2xl font-bold text-white mb-6">Pohon Keturunan</h2>
                              {/* <--- GUNAKAN D3FamilyTreeVisualization DI SINI ---> */}
-                             {individual && (
-                                <D3FamilyTreeVisualization
-                                    rootIndividualId={individual.id}
-                                    individuals={data.individuals}
-                                    families={data.families}
-                                    viewType="descendants"
-                                    width={window.innerWidth * 0.7} // Lebar sesuai kebutuhan
-                                    height={window.innerHeight * 0.7} // Tinggi sesuai kebutuhan
-                                />
+                             {/* Halaman ini akan kembali ke tampilan daftar keturunan sederhana */}
+                             {descendants.length > 0 ? (
+                                <DescendantTreeDisplay descendants={descendants}/>
+                             ) : (
+                                <p className="text-gray-400">Tidak ada keturunan yang tercatat.</p>
                              )}
                         </div>
                     )}
