@@ -1,30 +1,29 @@
 // Silsilah_1/src/components/AdminPage.tsx
 import React, { useState } from 'react';
 import { useFamily } from '../hooks/useFamilyData';
-import { useGuestbook } from '../hooks/useGuestbookData'; // <--- Tambahkan ini
+import { useGuestbook } from '../hooks/useGuestbookData';
 import { Tables } from '../types/supabase';
 type Individual = Tables<'individuals'>['Row'];
 type Family = Tables<'families'>['Row'];
-type GuestbookEntry = Tables<'guestbook_entries'>['Row']; // <--- Tambahkan ini
+type GuestbookEntry = Tables<'guestbook_entries'>['Row'];
 
-import { EditIcon, DeleteIcon, PlusIcon, GuestbookIcon } from './Icons'; // <--- Tambahkan GuestbookIcon
+import { EditIcon, DeleteIcon, PlusIcon, GuestbookIcon } from './Icons';
 import { Modal } from './Modal';
 import { AdminIndividualForm } from './AdminIndividualForm';
 import { AdminFamilyForm } from './AdminFamilyForm';
 
 export const AdminPage: React.FC = () => {
     const { data, addIndividual, updateIndividual, deleteIndividual, addFamily, updateFamily, deleteFamily } = useFamily();
-    const { entries: guestbookEntries, updateEntry: updateGuestbookEntry } = useGuestbook(); // <--- Ambil entries & updateEntry
+    const { entries: guestbookEntries, updateEntry: updateGuestbookEntry } = useGuestbook();
 
     const [isIndividualModalOpen, setIndividualModalOpen] = useState(false);
     const [isFamilyModalOpen, setFamilyModalOpen] = useState(false);
     const [editingIndividual, setEditingIndividual] = useState<Individual | null>(null);
     const [editingFamily, setEditingFamily] = useState<Family | null>(null);
 
-    // Untuk manajemen komentar buku tamu
     const [isGuestbookCommentModalOpen, setGuestbookCommentModalOpen] = useState(false);
     const [editingGuestbookEntry, setEditingGuestbookEntry] = useState<GuestbookEntry | null>(null);
-    const [currentComment, setCurrentComment] = useState(''); // State untuk input komentar admin
+    const [currentComment, setCurrentComment] = useState('');
 
     const individuals = Array.from(data.individuals.values());
     const families = Array.from(data.families.values());
@@ -39,10 +38,9 @@ export const AdminPage: React.FC = () => {
         setFamilyModalOpen(true);
     };
 
-    // Fungsi untuk membuka modal komentar buku tamu
     const openGuestbookCommentModal = (entry: GuestbookEntry) => {
         setEditingGuestbookEntry(entry);
-        setCurrentComment(entry.comment || ''); // Isi dengan komentar yang sudah ada
+        setCurrentComment(entry.comment || '');
         setGuestbookCommentModalOpen(true);
     };
 
@@ -64,7 +62,6 @@ export const AdminPage: React.FC = () => {
         setFamilyModalOpen(false);
     };
 
-    // Fungsi untuk menyimpan komentar admin
     const handleSaveComment = async () => {
         if (editingGuestbookEntry) {
             await updateGuestbookEntry(editingGuestbookEntry.id, currentComment);
@@ -128,7 +125,7 @@ export const AdminPage: React.FC = () => {
             </div>
 
             {/* Families Section (Tetap sama) */}
-            <div className="bg-base-200 p-6 rounded-lg shadow-xl mb-8"> {/* Tambahkan mb-8 untuk spasi sebelum Guestbook */}
+            <div className="bg-base-200 p-6 rounded-lg shadow-xl mb-8">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-2xl font-bold text-white">Kelola Keluarga</h2>
                     <button onClick={() => openFamilyModal()} className="flex items-center bg-primary hover:bg-secondary text-white font-bold py-2 px-4 rounded-md">
@@ -186,8 +183,6 @@ export const AdminPage: React.FC = () => {
                                     <td className="p-3 hidden md:table-cell">{entry.comment || '-'}</td>
                                     <td className="p-3 flex items-center space-x-2">
                                         <button onClick={() => openGuestbookCommentModal(entry)} className="p-2 text-blue-400 hover:text-blue-300" title="Tambah/Edit Komentar Admin"><EditIcon/></button>
-                                        {/* Jika Anda ingin admin juga bisa menghapus entri buku tamu, tambahkan tombol delete di sini */}
-                                        {/* <button onClick={() => handleDeleteGuestbookEntry(entry.id)} className="p-2 text-error hover:text-red-400"><DeleteIcon/></button> */}
                                     </td>
                                 </tr>
                             ))}
