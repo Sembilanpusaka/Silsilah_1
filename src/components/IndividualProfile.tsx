@@ -5,7 +5,6 @@ import { useFamily } from '../hooks/useFamilyData';
 import { D3FamilyTreeVisualization } from './D3FamilyTreeVisualization'; // <--- Impor komponen baru
 import { Tables } from '../types/supabase';
 
-// Asumsi DetailEntry dan LifeFactEntry didefinisikan secara global atau di types.ts
 interface DetailEntry {
     id: string;
     title: string;
@@ -60,22 +59,7 @@ const FamilyMemberLink: React.FC<{ individual?: Individual | null, relationship?
     );
 };
 
-// --- HAPUS KOMPONEN DESCENDANTTREEDISPLAY INI DARI SINI ---
-// const DescendantTreeDisplay: React.FC<{ descendants: (Individual & { children?: any[] })[] }> = ({ descendants }) => {
-//     if (descendants.length === 0) return null;
-//     return (
-//         <ul className="pl-6 border-l border-base-300 space-y-2">
-//             {descendants.map(desc => (
-//                 <li key={desc.id}>
-//                     <FamilyMemberLink individual={useMemo(() => ({ /* ... */ }), [desc])} relationship="Keturunan" />
-//                     {desc.children && <DescendantTreeDisplay descendants={desc.children} />}
-//                 </li>
-//             ))}
-//         </ul>
-//     );
-// };
-// -----------------------------------------------------------------
-
+// Hapus definisi DescendantTreeDisplay dari sini, karena sekarang menggunakan D3FamilyTreeVisualization
 
 const DetailSection: React.FC<{title: string, items?: DetailEntry[] | null}> = ({ title, items}) => {
     if (!items || items.length === 0) return null;
@@ -189,7 +173,6 @@ export const IndividualProfile: React.FC = () => {
             <div className="bg-base-200 shadow-xl rounded-lg overflow-hidden">
                 <div className="md:flex bg-base-300/30 p-8">
                     <div className="md:flex-shrink-0">
-                        {/* PERBAIKAN DI SINI: Gabungkan kedua atribut className */}
                         <img className="h-48 w-48 rounded-full object-cover mx-auto ring-4 ring-primary flex-shrink-0" src={individual.photo_url || 'https://picsum.photos/seed/person/200/200'} alt={individual.name || 'Unknown'} />
                         <div className="flex items-center justify-center mt-4 space-x-2 text-gray-400">
                              {individual.gender === 'male' ? <MaleIcon className="w-6 h-6 text-blue-400" /> : <FemaleIcon className="w-6 h-6 text-pink-400" />}
@@ -283,8 +266,8 @@ export const IndividualProfile: React.FC = () => {
                                     individuals={data.individuals}
                                     families={data.families}
                                     viewType="descendants"
-                                    width={800} // Atur lebar sesuai kebutuhan
-                                    height={500} // Atur tinggi sesuai kebutuhan
+                                    width={window.innerWidth * 0.7} // Lebar sesuai kebutuhan
+                                    height={window.innerHeight * 0.7} // Tinggi sesuai kebutuhan
                                 />
                              )}
                         </div>
