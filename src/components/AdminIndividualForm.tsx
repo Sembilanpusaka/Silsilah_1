@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react'; // Tambahkan useMemo
+// Silsilah_1/src/components/AdminIndividualForm.tsx
+import React, { useState, useEffect } from 'react';
 import { Tables } from '../types/supabase';
 
-// ... (Interface FormIndividual, DetailEntry, LifeFactEntry, SupabaseIndividualInsert, SupabaseIndividualUpdate, Gender - tidak ada perubahan)
 interface FormIndividual {
   id?: string;
   name: string;
@@ -17,7 +17,7 @@ interface FormIndividual {
   works: DetailEntry[] | null;
   sources: DetailEntry[] | null;
   references: DetailEntry[] | null;
-  lifeFacts: LifeFactEntry[] | null;
+  lifeFacts: LifeFactEntry[] | null; // Pastikan ini ada
 }
 
 interface DetailEntry {
@@ -47,7 +47,7 @@ enum Gender {
 }
 
 import { useFamily } from '../hooks/useFamilyData';
-import { DeleteIcon, PlusIcon, SearchIcon } from './Icons'; // Impor SearchIcon
+import { DeleteIcon, PlusIcon } from './Icons';
 import { Modal } from './Modal';
 
 interface AdminIndividualFormProps {
@@ -199,16 +199,16 @@ const LifeFactSection: React.FC<{
                 <input type="text" placeholder="Tanggal (e.g., 2005)" value={entry.date || ''} onChange={e => handleEntryChange(entry.id, 'date', e.target.value)} className="w-full bg-base-300 p-2 rounded-md" />
             </div>
             <div>
-                <input type="text" placeholder="Tempat (opsional)" value={entry.place || ''} onChange={e => handleEntryChange(e.id, 'place', e.target.value)} className="w-full bg-base-300 p-2 rounded-md" />
+                <input type="text" placeholder="Tempat (opsional)" value={entry.place || ''} onChange={e => handleEntryChange(entry.id, 'place', e.target.value)} className="w-full bg-base-300 p-2 rounded-md" />
             </div>
             <div>
-                <input type="text" placeholder="Deskripsi/Detail" value={entry.description || ''} onChange={e => handleEntryChange(e.id, 'description', e.target.value)} className="w-full bg-base-300 p-2 rounded-md" />
+                <input type="text" placeholder="Deskripsi/Detail" value={entry.description || ''} onChange={e => handleEntryChange(entry.id, 'description', e.target.value)} className="w-full bg-base-300 p-2 rounded-md" />
             </div>
             <div>
-                <input type="text" placeholder="Link Sumber (URL)" value={entry.source_link || ''} onChange={e => handleEntryChange(e.id, 'source_link', e.target.value)} className="w-full bg-base-300 p-2 rounded-md" />
+                <input type="text" placeholder="Link Sumber (URL)" value={entry.source_link || ''} onChange={e => handleEntryChange(entry.id, 'source_link', e.target.value)} className="w-full bg-base-300 p-2 rounded-md" />
             </div>
             <div className="flex items-center gap-2">
-                <input type="text" placeholder="Teks Sumber" value={entry.source_text || ''} onChange={e => handleEntryChange(e.id, 'source_text', e.target.value)} className="w-full bg-base-300 p-2 rounded-md" />
+                <input type="text" placeholder="Teks Sumber" value={entry.source_text || ''} onChange={e => handleEntryChange(entry.id, 'source_text', e.target.value)} className="w-full bg-base-300 p-2 rounded-md" />
                 <button type="button" onClick={() => removeEntry(entry.id)} className="p-2 text-error hover:text-red-400">
                     <DeleteIcon className="w-5 h-5"/>
                 </button>
