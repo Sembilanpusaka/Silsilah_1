@@ -2,9 +2,9 @@
 import React, { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useFamily } from '../hooks/useFamilyData';
-import { FamilyFlowVisualization } from './FamilyFlowVisualization'; // <-- Impor sudah benar
+import { FamilyFlowVisualization } from './FamilyFlowVisualization';
 import { Tables } from '../types/supabase';
-import { MaleIcon, FemaleIcon } from './Icons'; // Pastikan Icons diimpor dengan benar
+import { MaleIcon, FemaleIcon } from './Icons';
 
 type Individual = Tables<'individuals'>['Row'];
 type Family = Tables<'families'>['Row'];
@@ -52,6 +52,8 @@ const FamilyMemberLink: React.FC<{ individual?: Individual | null, relationship?
             <img src={individual.photo_url || 'https://picsum.photos/seed/person/50/50'} alt={individual.name || 'Unknown'} className="w-10 h-10 rounded-full object-cover" />
             <div>
                 <p className="font-semibold text-white">{individual.name}</p>
+                {/* Tambahkan kode UUID di sini */}
+                <p className="text-xs text-gray-500">ID: {individual.id.substring(0, 8)}</p>
                 {relationship && <p className="text-sm text-gray-400">{relationship}</p>}
             </div>
         </Link>
@@ -86,10 +88,10 @@ export const IndividualProfile: React.FC = () => {
 
         const individual = data.individuals.get(id)!;
         const parentFamily = individual.child_in_family_id ? data.families.get(individual.child_in_family_id) : undefined;
-        
+
         const father = parentFamily?.spouse1_id ? data.individuals.get(parentFamily.spouse1_id) : undefined;
         const mother = parentFamily?.spouse2_id ? data.individuals.get(parentFamily.spouse2_id) : undefined;
-        
+
         const spouseFamilies = Array.from(data.families.values())
             .filter(f => f.spouse1_id === id || f.spouse2_id === id)
             .map(family => ({
@@ -101,12 +103,14 @@ export const IndividualProfile: React.FC = () => {
         return { individual, parents: { father, mother }, spouseFamilies };
     }, [id, data.individuals, data.families]);
 
-    const dAbovilleProgenitorId = "bd7a9355-6c7d-4e8f-9a0b-1c2d3e4f5a6b";
+    // Progenitor utama untuk visualisasi dAboville
+    // Dari data individuals_rows (2).sql, Qomaruddin adalah 'bd7a9355-6c7d-4e8f-9a0b-1c2d3e4f5a6b'
+    const dAbovilleProgenitorId = "bd7a9355-6c7d-4e8f-9a0b-1c2d3e4f5a6b"; // Qomaruddin
 
     if (loading) return <div className="flex items-center justify-center h-full"><span className="loading loading-spinner loading-lg"></span></div>;
     if (error) return <div className="text-center p-8 text-xl text-error">Error: {error}</div>;
     if (!memoizedData) return <div className="text-center p-8 text-xl text-error">Individu dengan ID '{id}' tidak ditemukan.</div>;
-    
+
     const { individual, parents, spouseFamilies } = memoizedData;
 
     const TabButton: React.FC<{tabName: string; label: string}> = ({tabName, label}) => (
@@ -132,6 +136,8 @@ export const IndividualProfile: React.FC = () => {
                     <div className="p-8 w-full">
                         <div className="uppercase tracking-wide text-sm text-accent font-semibold">{individual.profession || 'Informasi Pribadi'}</div>
                         <h1 className="block mt-1 text-4xl leading-tight font-bold text-white">{individual.name}</h1>
+                        {/* Menambahkan kode UUID di sini, di bawah nama utama */}
+                        <p className="text-sm text-gray-400 mt-1">Kode Individu: {individual.id.substring(0, 8).toUpperCase()}</p>
                         <p className="mt-4 text-gray-300">{individual.description || 'Tidak ada deskripsi yang tersedia.'}</p>
                     </div>
                 </div>
@@ -199,10 +205,8 @@ export const IndividualProfile: React.FC = () => {
                         <div>
                              <h2 className="text-2xl font-bold text-white mb-6">Pohon Keturunan</h2>
                              {dAbovilleProgenitorId ? (
-                                // ==== PERBAIKAN UTAMA DI SINI ====
-                                // Gunakan nama komponen yang benar: FamilyFlowVisualization
                                 <div className="w-full h-[600px] bg-base-100 rounded-lg overflow-hidden">
-                                    <FamilyFlowVisualization 
+                                    <FamilyFlowVisualization
                                         rootIndividualId={individual.id}
                                         individuals={data.individuals}
                                         families={data.families}
