@@ -1,16 +1,15 @@
-// Silsilah_1/vite.config.ts
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'; // <--- Tambahkan ini untuk menggunakan 'path'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  resolve: { // <--- Tambahkan blok 'resolve' ini
-    alias: {
-      // Ini memberitahu Rollup untuk memetakan '@supabase/supabase-js'
-      // ke jalur sebenarnya di node_modules
-      '@supabase/supabase-js': path.resolve(__dirname, 'node_modules/@supabase/supabase-js'),
+  // Tambahkan konfigurasi optimasi ini
+  optimizeDeps: {
+    include: ['dagre'], // Pastikan dagre di-pre-bundled
+  },
+  build: {
+    commonjsOptions: {
+      include: [/node_modules/], // Memastikan commonjs modules di node_modules diproses
     },
   },
-  // Pastikan tidak ada properti 'build' lainnya yang tidak standar
-})
+});
