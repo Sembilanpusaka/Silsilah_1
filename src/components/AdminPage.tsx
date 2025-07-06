@@ -1,91 +1,98 @@
-// Silsilah_1/src/components/AdminPage.tsx
-import React, { useState } from 'react';
+// src/components/AdminPage.tsx
+import React, { useState } from 'react'; // <-- PERBAIKAN DI SINI
 import { useFamily } from '../hooks/useFamilyData';
 import { useGuestbook } from '../hooks/useGuestbookData';
+import { useTableManager } from '../hooks/useTableManager';
 import { Tables } from '../types/supabase';
-import { EditIcon, DeleteIcon, PlusIcon, GuestbookIcon } from './Icons';
+import { EditIcon, DeleteIcon, PlusIcon, GuestbookIcon, SearchIcon } from './Icons';
 import { Modal } from './Modal';
-import { AdminIndividualForm } from './AdminIndividualForm'; 
+import { AdminIndividualForm } from './AdminIndividualForm';
 import { AdminFamilyForm } from './AdminFamilyForm';
 
 type Individual = Tables<'individuals'>['Row'];
 type Family = Tables<'families'>['Row'];
 type GuestbookEntry = Tables<'guestbook_entries'>['Row'];
 
-export const AdminPage: React.FC = () => {
-    const { data, addIndividual, updateIndividual, deleteIndividual, addFamily, updateFamily, deleteFamily } = useFamily();
-    const { entries: guestbookEntries, updateEntry: updateGuestbookEntry } = useGuestbook();
+// Komponen UI Helper untuk Paginasi dan Pencarian
+const SearchInput: React.FC<{ term: string, setTerm: (value: string) => void, placeholder: string }> = ({ term, setTerm, placeholder }) => (
+  <div className="relative">
+    <input
+      type="text"
+      placeholder={placeholder}
+      value={term}
+      onChange={(e) => setTerm(e.target.value)}
+      className="input input-bordered w-full max-w-xs pl-10"
+    />
+    <div className="absolute inset-y-0 left-0 flex items-center pl-3">
+      <SearchIcon className="w-5 h-5 text-gray-500" />
+    </div>
+  </div>
+);
 
+const PaginationControls: React.FC<{ currentPage: number, totalPages: number, onPageChange: (page: number) => void }> = ({ currentPage, totalPages, onPageChange }) => {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="flex justify-center items-center space-x-2 mt-4">
+      <button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1} className="btn btn-sm">«</button>
+      <span className="font-semibold">Halaman {currentPage} dari {totalPages}</span>
+      <button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages} className="btn btn-sm">»</button>
+    </div>
+  );
+};
+
+export const AdminPage: React.FC = () => {
+    const { data, ...familyActions } = useFamily();
+    const { entries: guestbookEntries, ...guestbookActions } = useGuestbook();
+    
+    // State untuk Modals
     const [isIndividualModalOpen, setIndividualModalOpen] = useState(false);
     const [isFamilyModalOpen, setFamilyModalOpen] = useState(false);
+    const [isGuestbookCommentModalOpen, setGuestbookCommentModalOpen] = useState(false);
     const [editingIndividual, setEditingIndividual] = useState<Individual | null>(null);
     const [editingFamily, setEditingFamily] = useState<Family | null>(null);
-
-    const [isGuestbookCommentModalOpen, setGuestbookCommentModalOpen] = useState(false);
     const [editingGuestbookEntry, setEditingGuestbookEntry] = useState<GuestbookEntry | null>(null);
     const [currentComment, setCurrentComment] = useState('');
 
     const individuals = Array.from(data.individuals.values());
     const families = Array.from(data.families.values());
-
-    const openIndividualModal = (individual: Individual | null = null) => {
-        setEditingIndividual(individual);
-        setIndividualModalOpen(true);
-    };
-
-    const openFamilyModal = (family: Family | null = null) => {
-        setEditingFamily(family);
-        setFamilyModalOpen(true);
-    };
-
-    const openGuestbookCommentModal = (entry: GuestbookEntry) => {
-        setEditingGuestbookEntry(entry);
-        setCurrentComment(entry.comment || '');
-        setGuestbookCommentModalOpen(true);
-    };
-
-    const handleSaveIndividual = (individualData: Tables<'individuals'>['Insert'] | Tables<'individuals'>['Update']) => {
-        // Tipe sudah diperbarui di form, jadi casting tidak lagi diperlukan jika hook diperbarui
-        // Namun, jika hook masih mengharapkan tipe dasar, casting ini aman
-        if ('id' in individualData && individualData.id) {
-            updateIndividual(individualData as Tables<'individuals'>['Update']);
-        } else {
-            addIndividual(individualData as Tables<'individuals'>['Insert']);
-        }
-        setIndividualModalOpen(false);
-    };
-
-    const handleSaveFamily = (familyData: Tables<'families'>['Insert'] | Tables<'families'>['Update']) => {
-        if ('id' in familyData && familyData.id) {
-            updateFamily(familyData as Tables<'families'>['Update']);
-        } else {
-            addFamily(familyData as Tables<'families'>['Insert']);
-        }
-        setFamilyModalOpen(false);
-    };
-
-    const handleSaveComment = async () => {
-        if (editingGuestbookEntry) {
-            await updateGuestbookEntry(editingGuestbookEntry.id, currentComment);
-            setGuestbookCommentModalOpen(false);
-            setEditingGuestbookEntry(null);
-            setCurrentComment('');
-        }
-    };
-
-    const handleDeleteIndividual = (id: string) => {
-        if(window.confirm("Apakah Anda yakin ingin menghapus individu ini? Tindakan ini tidak dapat diurungkan.")){
-            deleteIndividual(id);
-        }
-    };
-
-    const handleDeleteFamily = (id: string) => {
-        if(window.confirm("Apakah Anda yakin ingin menghapus keluarga ini? Ini akan menghapus hubungan pasangan dan orang tua-anak.")){
-            deleteFamily(id);
-        }
-    };
-
     const getSpouseName = (id?: string | null) => id ? data.individuals.get(id)?.name : 'N/A';
+
+    // Kelola state untuk tabel Individu
+    const individualsManager = useTableManager({
+      initialData: individuals,
+      itemsPerPage: 10,
+      searchCallback: (item, term) => 
+        item.name.toLowerCase().includes(term) || item.id.toLowerCase().includes(term)
+    });
+
+    // Kelola state untuk tabel Keluarga
+    const familiesManager = useTableManager({
+      initialData: families,
+      itemsPerPage: 10,
+      searchCallback: (item, term) => {
+        const spouse1Name = getSpouseName(item.spouse1_id)?.toLowerCase() ?? '';
+        const spouse2Name = getSpouseName(item.spouse2_id)?.toLowerCase() ?? '';
+        return spouse1Name.includes(term) || spouse2Name.includes(term) || item.id.toLowerCase().includes(term);
+      }
+    });
+
+    // Kelola state untuk tabel Buku Tamu
+    const guestbookManager = useTableManager({
+      initialData: guestbookEntries,
+      itemsPerPage: 10,
+      searchCallback: (item, term) => 
+        (item.name?.toLowerCase() ?? '').includes(term) || (item.message?.toLowerCase() ?? '').includes(term)
+    });
+
+    // Fungsi-fungsi handler (disingkat untuk keringkasan)
+    const openIndividualModal = (individual: Individual | null = null) => { setEditingIndividual(individual); setIndividualModalOpen(true); };
+    const openFamilyModal = (family: Family | null = null) => { setEditingFamily(family); setFamilyModalOpen(true); };
+    const openGuestbookCommentModal = (entry: GuestbookEntry) => { setEditingGuestbookEntry(entry); setCurrentComment(entry.comment || ''); setGuestbookCommentModalOpen(true); };
+    const handleSaveIndividual = (d: any) => { 'id' in d ? familyActions.updateIndividual(d) : familyActions.addIndividual(d); setIndividualModalOpen(false); };
+    const handleSaveFamily = (d: any) => { 'id' in d ? familyActions.updateFamily(d) : familyActions.addFamily(d); setFamilyModalOpen(false); };
+    const handleDeleteIndividual = (id: string) => { if (window.confirm("Hapus individu?")) familyActions.deleteIndividual(id); };
+    const handleDeleteFamily = (id: string) => { if (window.confirm("Hapus keluarga?")) familyActions.deleteFamily(id); };
+    const handleSaveComment = async () => { if (editingGuestbookEntry) { await guestbookActions.updateEntry(editingGuestbookEntry.id, currentComment); setGuestbookCommentModalOpen(false); }};
 
     return (
         <div className="container mx-auto p-4 md:p-8">
@@ -93,149 +100,110 @@ export const AdminPage: React.FC = () => {
 
             {/* Individuals Section */}
             <div className="bg-base-200 p-6 rounded-lg shadow-xl mb-8">
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
                     <h2 className="text-2xl font-bold text-white">Kelola Individu</h2>
-                    <button onClick={() => openIndividualModal()} className="flex items-center bg-primary hover:bg-secondary text-white font-bold py-2 px-4 rounded-md">
-                        <PlusIcon className="w-5 h-5 mr-2" /> Tambah Individu
-                    </button>
+                    <SearchInput term={individualsManager.searchTerm} setTerm={individualsManager.setSearchTerm} placeholder="Cari nama atau ID..." />
+                    <button onClick={() => openIndividualModal()} className="btn btn-primary w-full md:w-auto"><PlusIcon className="w-5 h-5 mr-2" /> Tambah</button>
                 </div>
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left">
+                    <table className="table w-full">
                         <thead>
-                            <tr className="border-b border-base-300">
-                                <th className="p-3">Nama</th>
-                                <th className="p-3 hidden md:table-cell">Tanggal Lahir</th>
-                                <th className="p-3 hidden md:table-cell">Tanggal Meninggal</th>
-                                <th className="p-3">Tindakan</th>
-                            </tr>
+                            <tr><th>Nama</th><th className="hidden md:table-cell">Lahir</th><th className="hidden md:table-cell">Meninggal</th><th>Tindakan</th></tr>
                         </thead>
                         <tbody>
-                            {individuals.map(ind => (
-                                <tr key={ind.id} className="border-b border-base-300 hover:bg-base-300/50">
-                                    <td className="p-3 font-medium">{ind.name}</td>
-                                    <td className="p-3 hidden md:table-cell">{ind.birth_date ?? '-'}</td>
-                                    <td className="p-3 hidden md:table-cell">{ind.death_date ?? '-'}</td>
-                                    <td className="p-3 flex items-center space-x-2">
-                                        <button onClick={() => openIndividualModal(ind)} className="p-2 text-blue-400 hover:text-blue-300"><EditIcon/></button>
-                                        <button onClick={() => handleDeleteIndividual(ind.id)} className="p-2 text-error hover:text-red-400"><DeleteIcon/></button>
+                            {individualsManager.currentItems.map(ind => (
+                                <tr key={ind.id} className="hover">
+                                    <td className="font-medium">{ind.name}</td>
+                                    <td className="hidden md:table-cell">{ind.birth_date ?? '-'}</td>
+                                    <td className="hidden md:table-cell">{ind.death_date ?? '-'}</td>
+                                    <td className="flex items-center space-x-2">
+                                        <button onClick={() => openIndividualModal(ind)} className="btn btn-ghost btn-sm"><EditIcon/></button>
+                                        <button onClick={() => handleDeleteIndividual(ind.id)} className="btn btn-ghost btn-sm text-error"><DeleteIcon/></button>
                                     </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                 </div>
+                <PaginationControls {...individualsManager} onPageChange={individualsManager.setCurrentPage} />
             </div>
 
             {/* Families Section */}
             <div className="bg-base-200 p-6 rounded-lg shadow-xl mb-8">
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
                     <h2 className="text-2xl font-bold text-white">Kelola Keluarga</h2>
-                    <button onClick={() => openFamilyModal()} className="flex items-center bg-primary hover:bg-secondary text-white font-bold py-2 px-4 rounded-md">
-                        <PlusIcon className="w-5 h-5 mr-2" /> Tambah Keluarga
-                    </button>
+                    <SearchInput term={familiesManager.searchTerm} setTerm={familiesManager.setSearchTerm} placeholder="Cari nama pasangan..." />
+                    <button onClick={() => openFamilyModal()} className="btn btn-primary w-full md:w-auto"><PlusIcon className="w-5 h-5 mr-2" /> Tambah</button>
                 </div>
                  <div className="overflow-x-auto">
-                    <table className="w-full text-left">
+                    <table className="table w-full">
                         <thead>
-                            <tr className="border-b border-base-300">
-                                <th className="p-3">Pasangan 1</th>
-                                <th className="p-3">Pasangan 2</th>
-                                <th className="p-3 hidden md:table-cell">Jumlah Anak</th>
-                                <th className="p-3">Tindakan</th>
-                            </tr>
+                            <tr><th>Pasangan 1</th><th>Pasangan 2</th><th className="hidden md:table-cell">Jumlah Anak</th><th>Tindakan</th></tr>
                         </thead>
                         <tbody>
-                            {families.map(fam => (
-                                <tr key={fam.id} className="border-b border-base-300 hover:bg-base-300/50">
-                                    <td className="p-3 font-medium">{getSpouseName(fam.spouse1_id)}</td>
-                                    <td className="p-3 font-medium">{getSpouseName(fam.spouse2_id)}</td>
-                                    <td className="p-3 hidden md:table-cell">{fam.children_ids?.length ?? 0}</td>
-                                    <td className="p-3 flex items-center space-x-2">
-                                        <button onClick={() => openFamilyModal(fam)} className="p-2 text-blue-400 hover:text-blue-300"><EditIcon/></button>
-                                        <button onClick={() => handleDeleteFamily(fam.id)} className="p-2 text-error hover:text-red-400"><DeleteIcon/></button>
+                            {familiesManager.currentItems.map(fam => (
+                                <tr key={fam.id} className="hover">
+                                    <td className="font-medium">{getSpouseName(fam.spouse1_id)}</td>
+                                    <td className="font-medium">{getSpouseName(fam.spouse2_id)}</td>
+                                    <td className="hidden md:table-cell">{fam.children_ids?.length ?? 0}</td>
+                                    <td className="flex items-center space-x-2">
+                                        <button onClick={() => openFamilyModal(fam)} className="btn btn-ghost btn-sm"><EditIcon/></button>
+                                        <button onClick={() => handleDeleteFamily(fam.id)} className="btn btn-ghost btn-sm text-error"><DeleteIcon/></button>
                                     </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                 </div>
+                <PaginationControls {...familiesManager} onPageChange={familiesManager.setCurrentPage} />
             </div>
 
             {/* Guestbook Section */}
             <div className="bg-base-200 p-6 rounded-lg shadow-xl">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-2xl font-bold text-white">Kelola Buku Tamu</h2>
-                    <GuestbookIcon className="w-8 h-8 text-accent" />
+                 <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+                    <div className="flex items-center gap-4">
+                      <GuestbookIcon className="w-8 h-8 text-accent" />
+                      <h2 className="text-2xl font-bold text-white">Kelola Buku Tamu</h2>
+                    </div>
+                    <SearchInput term={guestbookManager.searchTerm} setTerm={guestbookManager.setSearchTerm} placeholder="Cari nama atau pesan..." />
                 </div>
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left">
+                    <table className="table w-full">
                         <thead>
-                            <tr className="border-b border-base-300">
-                                <th className="p-3">Nama Pengunjung</th>
-                                <th className="p-3">Pesan</th>
-                                <th className="p-3 hidden md:table-cell">Komentar Admin</th>
-                                <th className="p-3">Tindakan</th>
-                            </tr>
+                            <tr><th>Nama</th><th>Pesan</th><th className="hidden md:table-cell">Komentar Admin</th><th>Tindakan</th></tr>
                         </thead>
                         <tbody>
-                            {guestbookEntries.map(entry => (
-                                <tr key={entry.id} className="border-b border-base-300 hover:bg-base-300/50">
-                                    <td className="p-3 font-medium">{entry.name}</td>
-                                    <td className="p-3">{entry.message}</td>
-                                    <td className="p-3 hidden md:table-cell">{entry.comment || '-'}</td>
-                                    <td className="p-3 flex items-center space-x-2">
-                                        <button onClick={() => openGuestbookCommentModal(entry)} className="p-2 text-blue-400 hover:text-blue-300" title="Tambah/Edit Komentar Admin"><EditIcon/></button>
+                            {guestbookManager.currentItems.map(entry => (
+                                <tr key={entry.id} className="hover">
+                                    <td className="font-medium">{entry.name}</td>
+                                    <td>{entry.message}</td>
+                                    <td className="hidden md:table-cell">{entry.comment || '-'}</td>
+                                    <td>
+                                        <button onClick={() => openGuestbookCommentModal(entry)} className="btn btn-ghost btn-sm" title="Tambah/Edit Komentar"><EditIcon/></button>
                                     </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                 </div>
+                <PaginationControls {...guestbookManager} onPageChange={guestbookManager.setCurrentPage} />
             </div>
-
 
             {/* Modals */}
             <Modal isOpen={isIndividualModalOpen} onClose={() => setIndividualModalOpen(false)} title={editingIndividual ? 'Edit Individu' : 'Tambah Individu Baru'}>
-                <AdminIndividualForm
-                    onSave={handleSaveIndividual}
-                    onClose={() => setIndividualModalOpen(false)}
-                    initialData={editingIndividual}
-                />
+                <AdminIndividualForm onSave={handleSaveIndividual} onClose={() => setIndividualModalOpen(false)} initialData={editingIndividual} />
             </Modal>
-
             <Modal isOpen={isFamilyModalOpen} onClose={() => setFamilyModalOpen(false)} title={editingFamily ? 'Edit Keluarga' : 'Tambah Keluarga Baru'}>
-                <AdminFamilyForm
-                    onSave={handleSaveFamily}
-                    onClose={() => setFamilyModalOpen(false)}
-                    initialData={editingFamily}
-                    individuals={individuals}
-                />
+                <AdminFamilyForm onSave={handleSaveFamily} onClose={() => setFamilyModalOpen(false)} initialData={editingFamily} individuals={individuals} />
             </Modal>
-
-            {/* Modal untuk Komentar Buku Tamu */}
             <Modal isOpen={isGuestbookCommentModalOpen} onClose={() => setGuestbookCommentModalOpen(false)} title="Tambah/Edit Komentar Buku Tamu">
                 <div className="p-4 space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1">Pesan dari:</label>
-                        <p className="p-2 bg-base-300 rounded-md text-white">{editingGuestbookEntry?.name || 'N/A'}</p>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1">Isi Pesan:</label>
-                        <p className="p-2 bg-base-300 rounded-md text-white whitespace-pre-wrap">{editingGuestbookEntry?.message || 'N/A'}</p>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1">Komentar Admin</label>
-                        <textarea
-                            value={currentComment}
-                            onChange={(e) => setCurrentComment(e.target.value)}
-                            rows={4}
-                            className="w-full bg-base-300 border border-gray-600 rounded-md p-2 text-white"
-                            placeholder="Tulis komentar admin di sini..."
-                        />
-                    </div>
-                    <div className="flex justify-end space-x-4 pt-4">
-                        <button type="button" onClick={() => setGuestbookCommentModalOpen(false)} className="bg-base-300 hover:bg-opacity-80 text-white font-bold py-2 px-4 rounded-md">Batal</button>
-                        <button type="button" onClick={handleSaveComment} className="bg-primary hover:bg-secondary text-white font-bold py-2 px-4 rounded-md">Simpan Komentar</button>
+                    <p className="p-2 bg-base-300 rounded-md"><strong>Dari:</strong> {editingGuestbookEntry?.name}</p>
+                    <p className="p-2 bg-base-300 rounded-md whitespace-pre-wrap"><strong>Pesan:</strong> {editingGuestbookEntry?.message}</p>
+                    <textarea value={currentComment} onChange={(e) => setCurrentComment(e.target.value)} rows={4} className="textarea textarea-bordered w-full" placeholder="Tulis komentar..."></textarea>
+                    <div className="flex justify-end space-x-2">
+                        <button onClick={() => setGuestbookCommentModalOpen(false)} className="btn">Batal</button>
+                        <button onClick={handleSaveComment} className="btn btn-primary">Simpan</button>
                     </div>
                 </div>
             </Modal>
