@@ -86,6 +86,7 @@ export type Database = {
       }
       individuals: {
         Row: {
+          admin_name: string | null
           birth_date: string | null
           birth_place: string | null
           child_in_family_id: string | null
@@ -103,9 +104,14 @@ export type Database = {
           profession: string | null
           related_references: Json | null
           sources: Json | null
+          validated_by_admin: boolean | null
+          validated_by_validator: boolean | null
+          validation_date: string | null
+          validator_name: string | null
           works: Json | null
         }
         Insert: {
+          admin_name?: string | null
           birth_date?: string | null
           birth_place?: string | null
           child_in_family_id?: string | null
@@ -123,9 +129,14 @@ export type Database = {
           profession?: string | null
           related_references?: Json | null
           sources?: Json | null
+          validated_by_admin?: boolean | null
+          validated_by_validator?: boolean | null
+          validation_date?: string | null
+          validator_name?: string | null
           works?: Json | null
         }
         Update: {
+          admin_name?: string | null
           birth_date?: string | null
           birth_place?: string | null
           child_in_family_id?: string | null
@@ -143,6 +154,10 @@ export type Database = {
           profession?: string | null
           related_references?: Json | null
           sources?: Json | null
+          validated_by_admin?: boolean | null
+          validated_by_validator?: boolean | null
+          validation_date?: string | null
+          validator_name?: string | null
           works?: Json | null
         }
         Relationships: [

@@ -2,24 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { Tables } from '../types/supabase';
 
-interface FormIndividual {
-  id?: string;
-  name: string;
-  gender: 'male' | 'female' | 'unknown';
-  photoUrl: string | null;
-  birth: { date: string | null; place: string | null; };
-  death: { date: string | null; place: string | null; };
-  description: string | null;
-  profession: string | null;
-  notes: string | null;
-  childInFamilyId: string | null;
-  education: DetailEntry[] | null;
-  works: DetailEntry[] | null;
-  sources: DetailEntry[] | null;
-  references: DetailEntry[] | null;
-  lifeFacts: LifeFactEntry[] | null; // Pastikan ini ada
-}
-
+// =============================================================
+// PERUBAHAN: Perbarui Tipe FormIndividual dan LifeFactEntry
+// =============================================================
 interface DetailEntry {
   id: string;
   title: string;
@@ -37,8 +22,46 @@ interface LifeFactEntry {
     source_text: string | null;
 }
 
-type SupabaseIndividualInsert = Tables<'individuals'>['Insert'];
-type SupabaseIndividualUpdate = Tables<'individuals'>['Update'];
+interface FormIndividual {
+  id?: string;
+  name: string;
+  gender: 'male' | 'female' | 'unknown';
+  photoUrl: string | null;
+  birth: { date: string | null; place: string | null; };
+  death: { date: string | null; place: string | null; };
+  description: string | null;
+  profession: string | null;
+  notes: string | null;
+  childInFamilyId: string | null;
+  education: DetailEntry[] | null;
+  works: DetailEntry[] | null;
+  sources: DetailEntry[] | null;
+  references: DetailEntry[] | null;
+  lifeFacts: LifeFactEntry[] | null;
+  // =============================================================
+  // PERUBAHAN: Tambahkan Properti Validasi
+  // =============================================================
+  validatedByAdmin: boolean;
+  validatedByValidator: boolean;
+  adminName: string | null;
+  validatorName: string | null;
+  validationDate: string | null;
+}
+
+type SupabaseIndividualInsert = Tables<'individuals'>['Insert'] & {
+    validated_by_admin?: boolean;
+    validated_by_validator?: boolean;
+    admin_name?: string;
+    validator_name?: string;
+    validation_date?: string;
+};
+type SupabaseIndividualUpdate = Tables<'individuals'>['Update'] & {
+    validated_by_admin?: boolean;
+    validated_by_validator?: boolean;
+    admin_name?: string;
+    validator_name?: string;
+    validation_date?: string;
+};
 
 enum Gender {
   Male = 'male',
@@ -62,32 +85,59 @@ const emptyIndividualForm: FormIndividual = {
   description: null, profession: null, notes: null, childInFamilyId: null,
   education: [], works: [], sources: [], references: [],
   lifeFacts: [],
+  // =============================================================
+  // PERUBAHAN: Inisialisasi Properti Validasi
+  // =============================================================
+  validatedByAdmin: false,
+  validatedByValidator: false,
+  adminName: null,
+  validatorName: null,
+  validationDate: null,
 };
 
 const convertSupabaseToForm = (supabaseData: Tables<'individuals'>['Row']): FormIndividual => {
-  return {
-    id: supabaseData.id,
-    name: supabaseData.name,
-    gender: supabaseData.gender,
-    photoUrl: supabaseData.photo_url,
-    birth: {
-      date: supabaseData.birth_date,
-      place: supabaseData.birth_place
-    },
-    death: {
-      date: supabaseData.death_date,
-      place: supabaseData.death_place
-    },
-    description: supabaseData.description,
-    profession: supabaseData.profession,
-    notes: supabaseData.notes,
-    childInFamilyId: supabaseData.child_in_family_id,
-    education: supabaseData.education ? (supabaseData.education as DetailEntry[]) : [],
-    works: supabaseData.works ? (supabaseData.works as DetailEntry[]) : [],
-    sources: supabaseData.sources ? (supabaseData.sources as DetailEntry[]) : [],
-    references: supabaseData.related_references ? (supabaseData.related_references as DetailEntry[]) : [],
-    lifeFacts: supabaseData.life_events_facts ? (supabaseData.life_events_facts as LifeFactEntry[]) : [],
-  };
+    // =============================================================
+    // PERUBAHAN: Penyesuaian Tipe untuk 'initialData'
+    // =============================================================
+    const dataWithValidation = supabaseData as Individual & {
+        validated_by_admin?: boolean | null;
+        validated_by_validator?: boolean | null;
+        admin_name?: string | null;
+        validator_name?: string | null;
+        validation_date?: string | null;
+    };
+
+    return {
+        id: dataWithValidation.id,
+        name: dataWithValidation.name,
+        gender: dataWithValidation.gender,
+        photoUrl: dataWithValidation.photo_url,
+        birth: {
+            date: dataWithValidation.birth_date,
+            place: dataWithValidation.birth_place
+        },
+        death: {
+            date: dataWithValidation.death_date,
+            place: dataWithValidation.death_place
+        },
+        description: dataWithValidation.description,
+        profession: dataWithValidation.profession,
+        notes: dataWithValidation.notes,
+        childInFamilyId: dataWithValidation.child_in_family_id,
+        education: dataWithValidation.education ? (dataWithValidation.education as DetailEntry[]) : [],
+        works: dataWithValidation.works ? (dataWithValidation.works as DetailEntry[]) : [],
+        sources: dataWithValidation.sources ? (dataWithValidation.sources as DetailEntry[]) : [],
+        references: dataWithValidation.related_references ? (dataWithValidation.related_references as DetailEntry[]) : [],
+        lifeFacts: dataWithValidation.life_events_facts ? (dataWithValidation.life_events_facts as LifeFactEntry[]) : [],
+        // =============================================================
+        // PERUBAHAN: Konversi Properti Validasi dari Supabase ke Form
+        // =============================================================
+        validatedByAdmin: dataWithValidation.validated_by_admin || false,
+        validatedByValidator: dataWithValidation.validated_by_validator || false,
+        adminName: dataWithValidation.admin_name || null,
+        validatorName: dataWithValidation.validator_name || null,
+        validationDate: dataWithValidation.validation_date || null,
+    };
 };
 
 const convertFormToSupabase = (formData: FormIndividual): SupabaseIndividualInsert | SupabaseIndividualUpdate => {
@@ -108,6 +158,14 @@ const convertFormToSupabase = (formData: FormIndividual): SupabaseIndividualInse
     sources: formData.sources && formData.sources.length > 0 ? formData.sources as any : null,
     related_references: formData.references && formData.references.length > 0 ? formData.references as any : null,
     life_events_facts: formData.lifeFacts && formData.lifeFacts.length > 0 ? formData.lifeFacts as any : null,
+    // =============================================================
+    // PERUBAHAN: Konversi Properti Validasi dari Form ke Supabase
+    // =============================================================
+    validated_by_admin: formData.validatedByAdmin,
+    validated_by_validator: formData.validatedByValidator,
+    admin_name: formData.adminName === '' ? null : formData.adminName,
+    validator_name: formData.validatorName === '' ? null : formData.validatorName,
+    validation_date: formData.validationDate === '' ? null : formData.validationDate,
   };
 
   if ('id' in formData && formData.id) {
@@ -116,7 +174,7 @@ const convertFormToSupabase = (formData: FormIndividual): SupabaseIndividualInse
   return supabaseData;
 };
 
-
+// ... (DetailEntrySection dan LifeFactSection tetap sama) ...
 const DetailEntrySection: React.FC<{
   title: string;
   entries: DetailEntry[];
@@ -230,13 +288,25 @@ export const AdminIndividualForm: React.FC<AdminIndividualFormProps> = ({ onSave
   const { data: familyData } = useFamily();
 
   useEffect(() => {
-    setFormData(initialData ? convertSupabaseToForm(initialData) : emptyIndividualForm);
+    // =============================================================
+    // PERUBAHAN: Set Tanggal Validasi Otomatis Saat "initialData" Kosong (mode Add New)
+    // =============================================================
+    const initialForm = initialData ? convertSupabaseToForm(initialData) : {
+        ...emptyIndividualForm,
+        // Set validation date only if it's a new entry (no initialData ID)
+        validationDate: !initialData?.id ? new Date().toISOString().split('T')[0] : null // YYYY-MM-DD
+    };
+    setFormData(initialForm);
   }, [initialData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value === '' ? null : value }));
+    const { name, value, type, checked } = e.target as HTMLInputElement; // Cast for checkbox handling
+    setFormData(prev => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : (value === '' ? null : value)
+    }));
   };
+
 
   const handleEventChange = (e: React.ChangeEvent<HTMLInputElement>, eventType: 'birth' | 'death', field: 'date' | 'place') => {
       const { value } = e.target;
@@ -260,7 +330,7 @@ export const AdminIndividualForm: React.FC<AdminIndividualFormProps> = ({ onSave
   const renderFamilyOption = (family: Tables<'families'>['Row']) => {
     const spouse1 = family.spouse1_id ? familyData.individuals.get(family.spouse1_id)?.name : 'N/A';
     const spouse2 = family.spouse2_id ? familyData.individuals.get(family.spouse2_id)?.name : 'N/A';
-    return `Family of ${spouse1} & ${spouse2} (ID: ${family.id})`;
+    return `Family of ${spouse1} & ${spouse2} (ID: ${family.id?.substring(0,8)})`;
   }
 
   return (
@@ -327,6 +397,48 @@ export const AdminIndividualForm: React.FC<AdminIndividualFormProps> = ({ onSave
       <DetailEntrySection title="Referensi" entries={formData.references || []} updateEntries={(e) => setFormData(prev => ({...prev, references: e}))} />
 
       <LifeFactSection title="Fakta & Peristiwa Kehidupan" entries={formData.lifeFacts || []} updateEntries={(e) => setFormData(prev => ({...prev, lifeFacts: e}))} />
+
+      {/* ============================================================= */}
+      {/* PERUBAHAN: Tambahkan Bagian Validasi di AdminIndividualForm */}
+      {/* ============================================================= */}
+      <fieldset className="border border-base-300 p-4 rounded-md space-y-4">
+        <legend className="px-2 font-semibold text-gray-300">Status Validasi Data</legend>
+        <div className="flex items-center space-x-2">
+            <input
+                type="checkbox"
+                name="validatedByAdmin"
+                checked={formData.validatedByAdmin}
+                onChange={handleChange}
+                className="checkbox checkbox-primary"
+            />
+            <label className="text-gray-300">Divalidasi oleh Admin</label>
+        </div>
+        <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Nama Admin</label>
+            <input type="text" name="adminName" value={formData.adminName || ''} onChange={handleChange} className="w-full bg-base-300 p-2 rounded-md" />
+        </div>
+
+        <div className="flex items-center space-x-2">
+            <input
+                type="checkbox"
+                name="validatedByValidator"
+                checked={formData.validatedByValidator}
+                onChange={handleChange}
+                className="checkbox checkbox-primary"
+            />
+            <label className="text-gray-300">Divalidasi oleh Validator</label>
+        </div>
+        <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Nama Validator</label>
+            <input type="text" name="validatorName" value={formData.validatorName || ''} onChange={handleChange} className="w-full bg-base-300 p-2 rounded-md" />
+        </div>
+
+        <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Tanggal Validasi</label>
+            <input type="date" name="validationDate" value={formData.validationDate || ''} onChange={handleChange} className="w-full bg-base-300 p-2 rounded-md" />
+            <p className="text-xs text-gray-500 mt-1">Tanggal ini akan otomatis terisi saat data baru dibuat, tetapi bisa diubah manual.</p>
+        </div>
+      </fieldset>
 
 
       <div className="flex justify-end space-x-4 pt-4">

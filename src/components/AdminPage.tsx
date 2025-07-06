@@ -3,14 +3,14 @@ import React, { useState } from 'react';
 import { useFamily } from '../hooks/useFamilyData';
 import { useGuestbook } from '../hooks/useGuestbookData';
 import { Tables } from '../types/supabase';
+import { EditIcon, DeleteIcon, PlusIcon, GuestbookIcon } from './Icons';
+import { Modal } from './Modal';
+import { AdminIndividualForm } from './AdminIndividualForm'; 
+import { AdminFamilyForm } from './AdminFamilyForm';
+
 type Individual = Tables<'individuals'>['Row'];
 type Family = Tables<'families'>['Row'];
 type GuestbookEntry = Tables<'guestbook_entries'>['Row'];
-
-import { EditIcon, DeleteIcon, PlusIcon, GuestbookIcon } from './Icons';
-import { Modal } from './Modal';
-import { AdminIndividualForm } from './AdminIndividualForm';
-import { AdminFamilyForm } from './AdminFamilyForm';
 
 export const AdminPage: React.FC = () => {
     const { data, addIndividual, updateIndividual, deleteIndividual, addFamily, updateFamily, deleteFamily } = useFamily();
@@ -45,6 +45,8 @@ export const AdminPage: React.FC = () => {
     };
 
     const handleSaveIndividual = (individualData: Tables<'individuals'>['Insert'] | Tables<'individuals'>['Update']) => {
+        // Tipe sudah diperbarui di form, jadi casting tidak lagi diperlukan jika hook diperbarui
+        // Namun, jika hook masih mengharapkan tipe dasar, casting ini aman
         if ('id' in individualData && individualData.id) {
             updateIndividual(individualData as Tables<'individuals'>['Update']);
         } else {
@@ -89,7 +91,7 @@ export const AdminPage: React.FC = () => {
         <div className="container mx-auto p-4 md:p-8">
             <h1 className="text-4xl font-bold text-white mb-8">Panel Admin</h1>
 
-            {/* Individuals Section (Tetap sama) */}
+            {/* Individuals Section */}
             <div className="bg-base-200 p-6 rounded-lg shadow-xl mb-8">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-2xl font-bold text-white">Kelola Individu</h2>
@@ -124,7 +126,7 @@ export const AdminPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* Families Section (Tetap sama) */}
+            {/* Families Section */}
             <div className="bg-base-200 p-6 rounded-lg shadow-xl mb-8">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-2xl font-bold text-white">Kelola Keluarga</h2>
@@ -159,7 +161,7 @@ export const AdminPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* Guestbook Section (BARU) */}
+            {/* Guestbook Section */}
             <div className="bg-base-200 p-6 rounded-lg shadow-xl">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-2xl font-bold text-white">Kelola Buku Tamu</h2>
@@ -192,7 +194,7 @@ export const AdminPage: React.FC = () => {
             </div>
 
 
-            {/* Modals (Tetap sama) */}
+            {/* Modals */}
             <Modal isOpen={isIndividualModalOpen} onClose={() => setIndividualModalOpen(false)} title={editingIndividual ? 'Edit Individu' : 'Tambah Individu Baru'}>
                 <AdminIndividualForm
                     onSave={handleSaveIndividual}
@@ -206,10 +208,11 @@ export const AdminPage: React.FC = () => {
                     onSave={handleSaveFamily}
                     onClose={() => setFamilyModalOpen(false)}
                     initialData={editingFamily}
+                    individuals={individuals}
                 />
             </Modal>
 
-            {/* Modal untuk Komentar Buku Tamu (BARU) */}
+            {/* Modal untuk Komentar Buku Tamu */}
             <Modal isOpen={isGuestbookCommentModalOpen} onClose={() => setGuestbookCommentModalOpen(false)} title="Tambah/Edit Komentar Buku Tamu">
                 <div className="p-4 space-y-4">
                     <div>
