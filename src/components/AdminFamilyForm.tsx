@@ -18,6 +18,7 @@ export const AdminFamilyForm: React.FC<AdminFamilyFormProps> = ({ onSave, onClos
   const [spouse2, setSpouse2] = useState<string | null>(null);
   const [marriageDate, setMarriageDate] = useState<string | null>(null);
   const [marriagePlace, setMarriagePlace] = useState<string | null>(null);
+  const [childrenIds, setChildrenIds] = useState<string[]>([]); // <-- PERBAIKAN: State baru untuk anak
 
   useEffect(() => {
     if (initialData) {
@@ -25,19 +26,20 @@ export const AdminFamilyForm: React.FC<AdminFamilyFormProps> = ({ onSave, onClos
       setSpouse2(initialData.spouse2_id);
       setMarriageDate(initialData.marriage_date);
       setMarriagePlace(initialData.marriage_place);
+      setChildrenIds(initialData.children_ids || []); // <-- PERBAIKAN: Isi data anak jika sedang edit
     } else {
       // Reset form
       setSpouse1(null);
       setSpouse2(null);
       setMarriageDate(null);
       setMarriagePlace(null);
+      setChildrenIds([]); // <-- PERBAIKAN: Kosongkan data anak
     }
   }, [initialData]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validasi dasar
     if (!spouse1 && !spouse2) {
         alert("Setidaknya satu pasangan harus dipilih.");
         return;
@@ -48,6 +50,7 @@ export const AdminFamilyForm: React.FC<AdminFamilyFormProps> = ({ onSave, onClos
         spouse2_id: spouse2 || null,
         marriage_date: marriageDate || null,
         marriage_place: marriagePlace || null,
+        children_ids: childrenIds, // <-- PERBAIKAN: Sertakan ID anak saat menyimpan
     };
 
     if (initialData?.id) {
@@ -57,9 +60,17 @@ export const AdminFamilyForm: React.FC<AdminFamilyFormProps> = ({ onSave, onClos
     onSave(familyData);
   };
   
-  // Filter individu yang belum menjadi pasangan di form ini
+  // <-- PERBAIKAN: Handler untuk multiple select anak -->
+  const handleChildrenChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedIds = Array.from(e.target.selectedOptions, option => option.value);
+    setChildrenIds(selectedIds);
+  };
+
+  // Filter individu agar tidak bisa menjadi pasangannya sendiri
   const availableForSpouse2 = individuals.filter(ind => ind.id !== spouse1);
   const availableForSpouse1 = individuals.filter(ind => ind.id !== spouse2);
+  // Filter individu agar tidak bisa menjadi anaknya sendiri
+  const availableChildren = individuals.filter(ind => ind.id !== spouse1 && ind.id !== spouse2);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 p-4">
@@ -69,7 +80,7 @@ export const AdminFamilyForm: React.FC<AdminFamilyFormProps> = ({ onSave, onClos
           <select 
             value={spouse1 || ''} 
             onChange={(e) => setSpouse1(e.target.value || null)} 
-            className="w-full bg-base-300 p-2 rounded-md"
+            className="select select-bordered w-full"
           >
             <option value="">Pilih Individu</option>
             {availableForSpouse1.map(ind => (
@@ -82,7 +93,7 @@ export const AdminFamilyForm: React.FC<AdminFamilyFormProps> = ({ onSave, onClos
           <select 
             value={spouse2 || ''} 
             onChange={(e) => setSpouse2(e.target.value || null)} 
-            className="w-full bg-base-300 p-2 rounded-md"
+            className="select select-bordered w-full"
           >
             <option value="">Pilih Individu</option>
             {availableForSpouse2.map(ind => (
@@ -102,7 +113,7 @@ export const AdminFamilyForm: React.FC<AdminFamilyFormProps> = ({ onSave, onClos
               placeholder="e.g., 10 Jan 1980"
               value={marriageDate || ''} 
               onChange={(e) => setMarriageDate(e.target.value)} 
-              className="w-full bg-base-100 p-2 rounded-md" 
+              className="input input-bordered w-full" 
             />
           </div>
           <div>
@@ -112,15 +123,31 @@ export const AdminFamilyForm: React.FC<AdminFamilyFormProps> = ({ onSave, onClos
               placeholder="e.g., Surabaya"
               value={marriagePlace || ''} 
               onChange={(e) => setMarriagePlace(e.target.value)} 
-              className="w-full bg-base-100 p-2 rounded-md" 
+              className="input input-bordered w-full" 
             />
           </div>
         </div>
       </fieldset>
 
+      {/* <-- PERBAIKAN: Field baru untuk memilih anak --> */}
+      <div>
+        <label className="block text-sm font-medium text-gray-300 mb-1">Anak-anak</label>
+        <p className="text-xs text-gray-500 mb-2">Tahan Ctrl (atau Cmd di Mac) untuk memilih lebih dari satu.</p>
+        <select
+            multiple={true}
+            value={childrenIds}
+            onChange={handleChildrenChange}
+            className="select select-bordered w-full h-48"
+        >
+            {availableChildren.map(ind => (
+                <option key={ind.id} value={ind.id}>{ind.name}</option>
+            ))}
+        </select>
+      </div>
+
       <div className="flex justify-end space-x-4 pt-4">
-        <button type="button" onClick={onClose} className="bg-base-300 hover:bg-opacity-80 text-white font-bold py-2 px-4 rounded-md">Batal</button>
-        <button type="submit" className="bg-primary hover:bg-secondary text-white font-bold py-2 px-4 rounded-md">Simpan Keluarga</button>
+        <button type="button" onClick={onClose} className="btn">Batal</button>
+        <button type="submit" className="btn btn-primary">Simpan Keluarga</button>
       </div>
     </form>
   );
